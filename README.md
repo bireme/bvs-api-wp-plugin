@@ -16,13 +16,11 @@ Plugin WordPress para integração com a API BVS Saúde, permitindo exibir journ
 
 - 🔍 **Busca por múltiplos filtros**: país, assunto, tipo, título, ISSN
 - 🎛️ **Sidebar de Filtros**: Interface visual com checkboxes para múltiplos países
-- 🔗 **Filtros Combinados (AND)**: Todos os filtros funcionam em conjunto
 - 📱 **Templates responsivos**: grid, lista, compacto, detalhado
 - 📄 **Paginação integrada**: navegação fácil entre resultados
 - 🎨 **Customizável**: CSS e templates flexíveis
 - ⚡ **Sistema de cache**: otimização de performance
 - 🔒 **Seguro**: sanitização de inputs e escape de outputs
-- 🌍 **Facets Dinâmicos**: Países populados automaticamente da API
 
 ## 📦 Instalação
 
@@ -83,37 +81,32 @@ Exibe journals da BVS Saúde com diversos filtros e opções de visualização.
 | `max` | Máximo de itens total | `50` |
 | `show_pagination` | Habilitar paginação | `false` |
 | `page` | Página inicial | `1` |
-| `template` | Layout de exibição | `default` |
-| `columns` | Número de colunas (grid) | `4` |
+| `template` | Layout de exibição | `grid` |
+| `columns` | Número de colunas | `3` |
 | `show_fields` | Campos a exibir | `title,issn,publisher,country` |
 | `showFilters` | Mostrar sidebar de filtros | `false` |
 
-#### Templates Disponíveis
-
-- `default` - Lista padrão
-- `compact` - Vista compacta
-- `detailed` - Vista detalhada
-- `grid` - Grade de cards (4 colunas responsivas)
+**Nota:** O template padrão é `grid` (grade de cards responsiva). O parâmetro `template` existe para compatibilidade futura.
 
 #### Exemplos de Uso
 
 ```php
-// Grid com journals do Brasil
-[bvs_journals country="Brasil" max="20" template="grid"]
+// Grid básico com journals do Brasil
+[bvs_journals country="Brasil" max="20"]
 
-// Com sidebar de filtros (checkboxes de países)
-[bvs_journals showFilters="true" template="grid" columns="3"]
+// Com sidebar de filtros interativos (checkboxes de países)
+[bvs_journals showFilters="true" columns="3"]
 
-// Busca por título com paginação
-[bvs_journals searchTitle="saúde pública" limit="10" show_pagination="true"]
+// Grid de 4 colunas com paginação
+[bvs_journals limit="12" show_pagination="true" columns="4"]
 
-// Busca por assunto, vista compacta
-[bvs_journals subject="Medicina" limit="15" template="compact"]
+// Busca por título
+[bvs_journals searchTitle="saúde pública" limit="15"]
 
 // Busca por ISSN específico
 [bvs_journals issn="1234-5678"]
 
-// Grid personalizado com 3 colunas e filtros
+// Grid com 3 colunas e filtros ativos
 [bvs_journals country="Argentina" columns="3" max="30" showFilters="true"]
 
 // FILTROS COMBINADOS (AND)
@@ -121,7 +114,7 @@ Exibe journals da BVS Saúde com diversos filtros e opções de visualização.
 [bvs_journals country="Brasil" subject="Medicina" max="30"]
 
 // Busca por título "cardiologia" apenas do Brasil
-[bvs_journals searchTitle="cardiologia" country="Brasil" limit="15"]
+[bvs_journals searchTitle="cardiologia" country="Brasil"]
 
 // Journals de Enfermagem do Brasil com "saúde" no título
 [bvs_journals country="Brasil" subject="Enfermagem" searchTitle="saúde"]
@@ -408,79 +401,3 @@ if (!$data) {
     $cache->set('chave', $data, 3600); // 1 hora
 }
 ```
-
-## 📄 Licença
-
-GPLv2 or later
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Por favor, siga as práticas de código do projeto.
-
-## 📞 Suporte
-
-Para questões sobre a API, entre em contato com a equipe BIREME.
-
-## 💻 Exemplo Completo - Página de Busca
-
-```html
-<!-- Crie uma página no WordPress com este conteúdo -->
-
-<h2>Buscar Journals</h2>
-
-<!-- Formulário de busca -->
-<form method="get" class="bvs-search-form">
-    <div class="form-group">
-        <label>Buscar por título:</label>
-        <input type="text" name="bvsTitle" placeholder="Digite o título..." 
-               value="<?php echo esc_attr($_GET['bvsTitle'] ?? ''); ?>">
-    </div>
-    
-    <div class="form-group">
-        <label>País:</label>
-        <select name="bvsCountry">
-            <option value="">Todos</option>
-            <option value="Brasil">Brasil</option>
-            <option value="Argentina">Argentina</option>
-            <option value="Chile">Chile</option>
-        </select>
-    </div>
-    
-    <div class="form-group">
-        <label>Área:</label>
-        <select name="bvsSubject">
-            <option value="">Todas</option>
-            <option value="Medicina">Medicina</option>
-            <option value="Enfermagem">Enfermagem</option>
-            <option value="Odontologia">Odontologia</option>
-        </select>
-    </div>
-    
-    <button type="submit">🔍 Buscar</button>
-    <a href="?" class="btn-reset">Limpar</a>
-</form>
-
-<!-- O shortcode processa os parâmetros da URL automaticamente -->
-[bvs_journals show_pagination="true" template="grid"]
-
-<!-- Links de filtro rápido -->
-<h3>Busca rápida por país:</h3>
-<a href="?bvsCountry=Brasil">Brasil</a> | 
-<a href="?bvsCountry=Argentina">Argentina</a> | 
-<a href="?bvsCountry=Chile">Chile</a>
-```
-
-Para mais exemplos práticos, veja: [URL_PARAMETERS_USAGE.md](URL_PARAMETERS_USAGE.md)
-
-## 🔄 Changelog
-
-### 1.0.0
-- ✨ Versão inicial
-- ✨ Shortcode `[bvs_journals]`
-- ✨ Shortcode `[bvs_web_resources]`
-- ✨ Filtros: país, assunto, tipo, título, ISSN
-- ✨ Parâmetros via URL (query string) com prioridade sobre shortcode
-- ✨ Templates responsivos
-- ✨ Sistema de paginação
-- ✨ Sistema de cache
-

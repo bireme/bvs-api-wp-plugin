@@ -42,9 +42,7 @@ final class BvsJournalsShortcode {
             'showfilters' => 'false', // Mostrar barra lateral de filtros (minúsculo)
         ], $atts, 'bvs_journals');
         
-        // Verifica e aplica parâmetros da URL (query string)
-        // Permite buscar via URL: ?bvsCountry=Brasil&bvsSubject=Medicina
-        // IMPORTANTE: Parâmetros da URL têm PRIORIDADE e sobrescrevem os do shortcode
+        // Parâmetros da URL sobrescrevem os do shortcode
         $urlParams = [
             'bvsCountry' => 'country',
             'bvsSubject' => 'subject',
@@ -57,14 +55,12 @@ final class BvsJournalsShortcode {
             'bvsColumns' => 'columns',
         ];
         
-        // Loop que sobrescreve os valores do shortcode com os da URL (se existirem)
         foreach ($urlParams as $urlKey => $attrKey) {
             if (isset($_GET[$urlKey]) && !empty($_GET[$urlKey])) {
                 $atts[$attrKey] = sanitize_text_field($_GET[$urlKey]);
             }
         }
         
-        // Pega a página da URL se existir (para paginação funcionar)
         if (isset($_GET['bvsPage'])) {
             $atts['page'] = max(1, (int) $_GET['bvsPage']);
         }
@@ -75,14 +71,12 @@ final class BvsJournalsShortcode {
             $atts['country'] = implode(',', $selectedCountries);
         }
         
-        // Sanitizar atributos
-        $atts['limit'] = max(1, min(100, (int) $atts['limit'])); // entre 1 e 100
-        $atts['max'] = max(1, min(500, (int) $atts['max'])); // entre 1 e 500
+        $atts['limit'] = max(1, min(100, (int) $atts['limit']));
+        $atts['max'] = max(1, min(500, (int) $atts['max']));
         $atts['page'] = max(1, (int) $atts['page']);
         $atts['show_pagination'] = $atts['show_pagination'] === 'true';
         $atts['showFilters'] = $atts['showFilters'] === 'true';
         
-        // Se buscar por país e template não especificado, usar grid por padrão
         if (!empty($atts['country']) && $atts['template'] === 'default') {
             $atts['template'] = 'grid';
         }
@@ -99,62 +93,47 @@ final class BvsJournalsShortcode {
                 return $this->renderError('Erro de conexão com a API BVS: ' . $connectionTest['message']);
             }
             
-            // BUSCA POR ISSN tem prioridade (busca específica)
             if (!empty($atts['issn'])) {
                 $journal = $client->getJournalByIssn(sanitize_text_field($atts['issn']));
                 $journals = $journal && $journal->isValid() ? [$journal] : [];
                 $totalJournals = count($journals);
                 } else {
-                // Sanitizar valores uma vez antes de usar (já foram sanitizados se vieram da URL)
                 $searchTitle = !empty($atts['searchTitle']) ? trim($atts['searchTitle']) : '';
                 $search = !empty($atts['search']) ? trim($atts['search']) : '';
                 $subject = !empty($atts['subject']) ? trim($atts['subject']) : '';
                 $country = !empty($atts['country']) ? trim($atts['country']) : '';
                 
-                // Construir query combinada (AND) com todos os filtros ativos
                 $queryParts = [];
                 $filterQuery = '';
                 
-                // Título (title)
                 if (!empty($searchTitle)) {
                     $queryParts[] = 'title:"' . $searchTitle . '"';
                 }
                 
-                // Busca livre (fulltext)
                 if (!empty($search)) {
                     $queryParts[] = $search;
                 }
                 
-                // Assunto (subject_area)
                 if (!empty($subject)) {
                     $queryParts[] = 'subject_area:"' . $subject . '"';
                 }
                 
-                // País (country via fq se houver outros filtros, senão usa método específico)
                 $hasCountry = !empty($country);
                 if ($hasCountry && !empty($queryParts)) {
-                    // Tem país + outros filtros: usa fq
                     $countryFilter = $this->buildCountryFilter($country);
                     $filterQuery = 'country:' . $countryFilter;
                 }
                 
-                // Construir query final
                 $finalQuery = !empty($queryParts) ? implode(' AND ', $queryParts) : '*:*';
                 
-                // Se tem APENAS país sem outros filtros, usa método específico da API
                 if ($hasCountry && empty($queryParts)) {
-                    error_log('DEBUG BVS: Usando getJournalsByCountry para país: ' . $country);
-                    // Usa o método otimizado para país
                 if (!$atts['show_pagination']) {
-                        $firstCall = $client->getJournalsByCountry($country, 1);
-                        error_log('DEBUG BVS: firstCall total=' . ($firstCall['total'] ?? 'null'));
-                        error_log('DEBUG BVS: firstCall error=' . ($firstCall['error'] ?? 'none'));
+                    $firstCall = $client->getJournalsByCountry($country, 1);
                     $totalJournals = $firstCall['total'] ?? 0;
                     $results = $client->getJournalsByCountry(
-                            $country, 
+                        $country, 
                         min($totalJournals, $atts['max'])
                     );
-                        error_log('DEBUG BVS: results journals count=' . count($results['journals'] ?? []));
                 } else {
                     $start = ($atts['page'] - 1) * $atts['limit'];
                     $results = $client->getJournalsByCountry(
@@ -166,35 +145,29 @@ final class BvsJournalsShortcode {
                 }
                 $journals = $results['journals'] ?? [];
                 } else {
-                    // Tem outros filtros (com ou sem país)
                     $searchParams = [
                         'q' => $finalQuery,
                         'count' => $atts['limit'],
                         'start' => ($atts['page'] - 1) * $atts['limit']
                     ];
                     
-                    // Adicionar filtro de país se existir
                     if (!empty($filterQuery)) {
                         $searchParams['fq'] = $filterQuery;
                     }
                     
-                // Se pagination desabilitada, busca todos
                 if (!$atts['show_pagination']) {
-                    // Primeira chamada para saber o total
-                        $firstCall = $client->searchJournals(array_merge($searchParams, ['count' => 1, 'start' => 0]));
+                    $firstCall = $client->searchJournals(array_merge($searchParams, ['count' => 1, 'start' => 0]));
                     $totalJournals = $firstCall['total'] ?? 0;
                     
-                    // Segunda chamada buscando todos (limitado ao max)
-                        $searchParams['count'] = min($totalJournals, $atts['max']);
-                        $searchParams['start'] = 0;
-                        $results = $client->searchJournals($searchParams);
+                    $searchParams['count'] = min($totalJournals, $atts['max']);
+                    $searchParams['start'] = 0;
+                    $results = $client->searchJournals($searchParams);
                 } else {
-                    // Com paginação
-                        $results = $client->searchJournals($searchParams);
+                    $results = $client->searchJournals($searchParams);
                     $totalJournals = $results['total'] ?? 0;
                 }
                     
-                    // Converter arrays para DTOs (searchJournals retorna arrays brutos)
+                    // Converter arrays para DTOs
                     $rawJournals = $results['journals'] ?? [];
                     $journals = array_filter(
                         array_map(function($journal) {

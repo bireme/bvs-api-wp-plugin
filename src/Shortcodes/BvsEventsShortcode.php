@@ -54,10 +54,7 @@ final class BvsEventsShortcode {
         }
         
         try {
-            // TODO: Implementar cliente específico para eventos
-            // Por enquanto, retorna mensagem
             return $this->renderPlaceholder($atts);
-            
         } catch (\Exception $e) {
             return '<div class="bvs-error">Erro ao buscar eventos: ' . esc_html($e->getMessage()) . '</div>';
         }
@@ -86,7 +83,7 @@ final class BvsEventsShortcode {
                         <li>📝 Título: <?php echo esc_html($atts['searchTitle']); ?></li>
                     <?php endif; ?>
                 </ul>
-                <p style="margin-top: 20px;"><em>Implementação da API de eventos em desenvolvimento.</em></p>
+                <p style="margin-top: 20px;"><em>Aguardando configuração da URL da API.</em></p>
             </div>
         </div>
         <?php

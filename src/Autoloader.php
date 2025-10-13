@@ -1,9 +1,7 @@
 <?php
 namespace BV;
 
-//Transforma namespace em caminho de arquivos, e caso passe pela regra (o namespace é do plugin "BV"), 
-// da require sempre que uma classe desconhecida é encontrada, isso evita que eu tenha que ficar dando require_once em todos os arquivos
-// porém o nome dos arquivos devem seguir o padrão, da classe, caso contrário o autoloader não vai encontrar o arquivo.
+// Autoloader PSR-4: Transforma namespace em caminho de arquivos
 
 final class Autoloader {
     public static function init(string $prefix, string $baseDir): void {

@@ -45,8 +45,7 @@ final class Plugin {
     public function printCustomCSS(): void {
         $css = get_option('bv_custom_css');
         if (!empty($css)) {
-            // Permite HTML cru apenas para quem tem unfiltered_html (admins); senão, limpa
-            // Evista que um usuário crie algum css que interfira no site em locais onde não deveria (como aconteceu no portal)
+            // Permite HTML apenas para administradores
             if (current_user_can('unfiltered_html')) {
                 echo "<style id='bv-custom-css'>\n" . $css . "\n</style>";
             }
@@ -56,8 +55,7 @@ final class Plugin {
     public function printCustomJS(): void {
         $js = get_option('bv_custom_js');
         if (!empty($js)) {
-            //Mesma coisa do css.
-            //Evita uso indiscriminado e interferência no site
+            // Permite JavaScript apenas para administradores
             if (current_user_can('unfiltered_html')) {
                 echo "<script id='bv-custom-js'>\n" . $js . "\n</script>";
             }

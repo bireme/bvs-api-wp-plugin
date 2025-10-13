@@ -83,7 +83,7 @@ final class BvsBibliographicDatabasesShortcode {
                     </ul>
                 <?php endif; ?>
                 <p style="margin-top: 20px;"><strong>Alias:</strong> Você também pode usar <code>[bvs_databases]</code></p>
-                <p><em>Implementação da API de bases bibliográficas em desenvolvimento.</em></p>
+                <p><em>Aguardando configuração da URL da API.</em></p>
             </div>
         </div>
         <?php

@@ -317,7 +317,7 @@ final class BvsaludClient {
         ];
     }
 
-    // ==================== MÉTODOS PARA RECURSOS WEB (ENDPOINT /search) ====================
+    // Métodos para Recursos Web
 
     /**
      * Busca recursos web por termo de pesquisa usando endpoint /search

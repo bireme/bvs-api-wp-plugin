@@ -102,14 +102,7 @@ final class AdminMenu {
                     <li>📱 <strong><?php esc_html_e('Responsivo', 'bvsalud-integrator'); ?></strong> - <?php esc_html_e('Layout adaptável para desktop e mobile', 'bvsalud-integrator'); ?></li>
                     <li>🔌 <strong><?php esc_html_e('Parâmetros URL', 'bvsalud-integrator'); ?></strong> - <?php esc_html_e('Todos os filtros aceitam parâmetros via query string', 'bvsalud-integrator'); ?></li>
                 </ul>
-                
-                <h3><?php esc_html_e('Templates Disponíveis:', 'bvsalud-integrator'); ?></h3>
-                <ul>
-                    <li><strong>default</strong> - <?php esc_html_e('Template padrão com lista simples', 'bvsalud-integrator'); ?></li>
-                    <li><strong>compact</strong> - <?php esc_html_e('Template compacto para listas', 'bvsalud-integrator'); ?></li>
-                    <li><strong>detailed</strong> - <?php esc_html_e('Template detalhado com todas as informações', 'bvsalud-integrator'); ?></li>
-                    <li><strong>grid</strong> - <?php esc_html_e('Template em grade responsiva', 'bvsalud-integrator'); ?></li>
-                </ul>
+
                 
                 <h3><?php esc_html_e('Exemplos de URLs com Filtros:', 'bvsalud-integrator'); ?></h3>
                 <ul>

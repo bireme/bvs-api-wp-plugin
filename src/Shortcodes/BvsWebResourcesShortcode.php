@@ -74,7 +74,6 @@ final class BvsWebResourcesShortcode {
         try {
             $client = new BvsaludClient();
             
-            // Extrair filtros
             $country = trim($atts['country']);
             $subject = trim($atts['subject']);
             $term = trim($atts['term']);
@@ -84,41 +83,32 @@ final class BvsWebResourcesShortcode {
             $resources = [];
             $totalResources = 0;
             $filterQuery = '';
-            
-            // Lógica de filtragem combinada (AND)
             $queryParts = [];
             
-            // Título
             if (!empty($searchTitle)) {
                 $queryParts[] = 'title:"' . $searchTitle . '"';
             }
             
-            // Termo livre
             if (!empty($term)) {
                 $queryParts[] = $term;
             }
             
-            // Tipo
             if (!empty($type)) {
                 $queryParts[] = 'type:"' . $type . '"';
             }
             
-            // Assunto
             if (!empty($subject)) {
                 $queryParts[] = 'subject_area:"' . $subject . '"';
             }
             
-            // País (via fq se houver outros filtros)
             $hasCountry = !empty($country);
             if ($hasCountry && !empty($queryParts)) {
                 $countryFilter = $this->buildCountryFilter($country);
                 $filterQuery = 'publication_country:' . $countryFilter;
             }
             
-            // Construir query final
             $finalQuery = !empty($queryParts) ? implode(' AND ', $queryParts) : '*:*';
             
-            // Se tem APENAS país sem outros filtros, usa método específico da API
             if ($hasCountry && empty($queryParts)) {
                 if (!$atts['show_pagination']) {
                     $firstCall = $client->getWebResourcesByCountry($country, 1);
@@ -137,35 +127,27 @@ final class BvsWebResourcesShortcode {
                 }
                 $resources = $results['resources'] ?? [];
             } else {
-                // Tem outros filtros (com ou sem país)
                 $searchParams = [
                     'q' => $finalQuery,
                     'count' => $atts['count'],
                     'start' => ($atts['page'] - 1) * $atts['count']
                 ];
                 
-                // Adicionar filtro de país se existir
                 if (!empty($filterQuery)) {
                     $searchParams['fq'] = $filterQuery;
                 }
                 
-                // Se pagination desabilitada, busca todos
                 if (!$atts['show_pagination']) {
-                    // Primeira chamada para saber o total
                     $firstCall = $client->searchWebResources(array_merge($searchParams, ['count' => 1, 'start' => 0]));
                     $totalResources = $firstCall['total'] ?? 0;
                     
-                    // Segunda chamada buscando todos (limitado ao max)
                     $searchParams['count'] = min($totalResources, $atts['max']);
                     $searchParams['start'] = 0;
                     $results = $client->searchWebResources($searchParams);
                 } else {
-                    // Com paginação
                     $results = $client->searchWebResources($searchParams);
                     $totalResources = $results['total'] ?? 0;
                 }
-                
-                // Converter arrays para DTOs
                 $rawResources = $results['resources'] ?? [];
                 $resources = array_filter(
                     array_map(function($resource) {

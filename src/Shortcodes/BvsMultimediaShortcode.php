@@ -81,7 +81,7 @@ final class BvsMultimediaShortcode {
                         <?php endif; ?>
                     </ul>
                 <?php endif; ?>
-                <p style="margin-top: 20px;"><em>Implementação da API de multimídia em desenvolvimento.</em></p>
+                <p style="margin-top: 20px;"><em>Aguardando configuração da URL da API.</em></p>
             </div>
         </div>
         <?php
