@@ -240,11 +240,6 @@ Exibe recursos web (bases de dados, portais, sites) da LIS/BVS Saúde.
 
 Ambos os shortcodes (`[bvs_journals]` e `[bvs_web_resources]`) aceitam parâmetros via URL, permitindo criar buscas dinâmicas e links diretos.
 
-**Vantagens:**
-- ✅ Criar formulários de busca personalizados
-- ✅ Links diretos para resultados filtrados
-- ✅ Integração com outros sistemas
-- ✅ Parâmetros URL sempre têm prioridade sobre os do shortcode
 
 #### Parâmetros via URL (Query String)
 
