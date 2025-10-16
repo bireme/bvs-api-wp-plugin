@@ -16,9 +16,9 @@ Plugin WordPress para integração com a API BVS Saúde, permitindo exibir journ
 
 - 🔍 **Busca por múltiplos filtros**: país, assunto, tipo, título, ISSN
 - 🎛️ **Sidebar de Filtros**: Interface visual com checkboxes para múltiplos países
-- 📱 **Templates responsivos**: grid, lista, compacto, detalhado
+- 📱 **Layout responsivo**: grid de cards adaptável
 - 📄 **Paginação integrada**: navegação fácil entre resultados
-- 🎨 **Customizável**: CSS e templates flexíveis
+- 🎨 **Customizável**: CSS flexível
 - ⚡ **Sistema de cache**: otimização de performance
 - 🔒 **Seguro**: sanitização de inputs e escape de outputs
 
@@ -52,12 +52,12 @@ Após ativar o plugin, vá para **BVSalud > Configurações** e configure:
 |-----------|-----------|--------|
 | `[bvs_journals]` | Periódicos científicos | ✅ Completo |
 | `[bvs_web_resources]` | Recursos web (LIS) | ✅ Completo |
-| `[bvs_events]` | Eventos em saúde | 🚧 Placeholder |
-| `[bvs_multimedia]` | Vídeos, áudios, imagens | 🚧 Placeholder |
-| `[bvs_legislations]` | Leis, decretos, normas | 🚧 Placeholder |
-| `[bvs_databases]` ou `[bvs_bibliographic_databases]` | Bases bibliográficas | 🚧 Placeholder |
+| `[bvs_legislations]` | Leis, decretos, normas | ✅ Completo |
+| `[bvs_databases]` ou `[bvs_bibliographic_databases]` | Bases bibliográficas | ✅ Completo |
+| `[bvs_events]` | Eventos em saúde | ⚠️ API Incorreta |
+| `[bvs_multimedia]` | Vídeos, áudios, imagens | ⚠️ API Incorreta |
 
-**Nota:** Shortcodes com status "Placeholder" exibem uma interface que indica a configuração está pronta, mas requerem implementação da integração com a API específica.
+**Nota:** Os shortcodes `[bvs_events]` e `[bvs_multimedia]` estão implementados mas apresentam problemas na chamada da API, retornando erros de conexão.
 
 ### [bvs_journals]
 
@@ -81,12 +81,11 @@ Exibe journals da BVS Saúde com diversos filtros e opções de visualização.
 | `max` | Máximo de itens total | `50` |
 | `show_pagination` | Habilitar paginação | `false` |
 | `page` | Página inicial | `1` |
-| `template` | Layout de exibição | `grid` |
 | `columns` | Número de colunas | `3` |
 | `show_fields` | Campos a exibir | `title,issn,publisher,country` |
 | `showFilters` | Mostrar sidebar de filtros | `false` |
 
-**Nota:** O template padrão é `grid` (grade de cards responsiva). O parâmetro `template` existe para compatibilidade futura.
+**Nota:** Todos os shortcodes utilizam o layout grid (grade de cards responsiva).
 
 #### Exemplos de Uso
 
@@ -95,10 +94,10 @@ Exibe journals da BVS Saúde com diversos filtros e opções de visualização.
 [bvs_journals country="Brasil" max="20"]
 
 // Com sidebar de filtros interativos (checkboxes de países)
-[bvs_journals showFilters="true" columns="3"]
+[bvs_journals showFilters="true"]
 
-// Grid de 4 colunas com paginação
-[bvs_journals limit="12" show_pagination="true" columns="4"]
+// Grid com paginação (sempre 3 colunas)
+[bvs_journals limit="12" show_pagination="true"]
 
 // Busca por título
 [bvs_journals searchTitle="saúde pública" limit="15"]
@@ -106,8 +105,8 @@ Exibe journals da BVS Saúde com diversos filtros e opções de visualização.
 // Busca por ISSN específico
 [bvs_journals issn="1234-5678"]
 
-// Grid com 3 colunas e filtros ativos
-[bvs_journals country="Argentina" columns="3" max="30" showFilters="true"]
+// Grid com filtros ativos (sempre 3 colunas)
+[bvs_journals country="Argentina" max="30" showFilters="true"]
 
 // FILTROS COMBINADOS (AND)
 // Journals do Brasil na área de Medicina
@@ -135,8 +134,6 @@ O shortcode também aceita parâmetros através da URL, permitindo criar links d
 | `bvsIssn` | `issn` | `?bvsIssn=1234-5678` |
 | `bvsLimit` | `limit` | `?bvsLimit=20` |
 | `bvsMax` | `max` | `?bvsMax=100` |
-| `bvsTemplate` | `template` | `?bvsTemplate=grid` |
-| `bvsColumns` | `columns` | `?bvsColumns=3` |
 | `bvsPage` | `page` | `?bvsPage=2` |
 
 **Exemplos de URLs:**
@@ -155,7 +152,7 @@ Coloque o shortcode `[bvs_journals]` em uma página, e os parâmetros da URL ser
 Ative o parâmetro `showFilters="true"` para exibir uma sidebar com filtros interativos:
 
 ```php
-[bvs_journals showFilters="true" template="grid" columns="3"]
+[bvs_journals showFilters="true"]
 ```
 
 **Funcionalidades da Sidebar:**
@@ -196,7 +193,6 @@ Exibe recursos web (bases de dados, portais, sites) da LIS/BVS Saúde.
 | `count` | Itens por página | `12` |
 | `max` | Máximo de itens total | `50` |
 | `show_pagination` | Habilitar paginação | `false` |
-| `template` | Layout de exibição | `default` |
 | `columns` | Número de colunas (grid) | `4` |
 | `show_fields` | Campos a exibir | `title,type,country` |
 | `showFilters` | Mostrar sidebar de filtros | `false` |
@@ -205,10 +201,10 @@ Exibe recursos web (bases de dados, portais, sites) da LIS/BVS Saúde.
 
 ```php
 // Grid com recursos do Brasil
-[bvs_web_resources country="Brasil" max="20" template="grid"]
+[bvs_web_resources country="Brasil" max="20"]
 
 // Com sidebar de filtros interativos
-[bvs_web_resources showFilters="true" template="grid" columns="3"]
+[bvs_web_resources showFilters="true"]
 
 // Busca por termo com paginação
 [bvs_web_resources term="saúde pública" count="10" show_pagination="true"]
@@ -255,7 +251,6 @@ O shortcode também aceita parâmetros através da URL:
 | `bvsTerm` | `term` | `?bvsTerm=covid` |
 | `bvsSearchTitle` ou `bvsTitle` | `searchTitle` | `?bvsTitle=biblioteca+virtual` |
 | `bvsCount` | `count` | `?bvsCount=20` |
-| `bvsTemplate` | `template` | `?bvsTemplate=compact` |
 
 **Exemplos de URLs:**
 
@@ -267,6 +262,98 @@ https://seusite.com/recursos/?bvsSubject=Enfermagem&bvsTerm=covid
 
 **Uso:**
 Coloque o shortcode `[bvs_web_resources]` em uma página, e os parâmetros da URL serão aplicados automaticamente. Os parâmetros da URL **sobrescrevem** os parâmetros do shortcode.
+
+### [bvs_legislations]
+
+Exibe legislações (leis, decretos, normas) da BVS Saúde.
+
+#### Parâmetros de Filtragem
+
+| Parâmetro | Descrição | Exemplo |
+|-----------|-----------|---------|
+| `country` | Filtrar por país | `country="Brasil"` |
+| `subject` | Filtrar por área temática | `subject="Saúde Pública"` |
+| `search` | Busca livre | `search="covid"` |
+| `searchTitle` | Buscar por título | `searchTitle="lei orgânica"` |
+| `type` | Filtrar por tipo | `type="decreto"` |
+
+#### Parâmetros de Configuração
+
+| Parâmetro | Descrição | Padrão |
+|-----------|-----------|--------|
+| `limit` | Itens por página | `12` |
+| `max` | Máximo de itens total | `50` |
+| `show_pagination` | Habilitar paginação | `false` |
+| `page` | Página inicial | `1` |
+| `show_fields` | Campos a exibir | `title,type,country,scope` |
+| `showFilters` | Mostrar sidebar de filtros | `false` |
+
+#### Exemplos de Uso
+
+```php
+// Grid com legislações do Brasil
+[bvs_legislations country="Brasil" max="20"]
+
+// Busca por tipo específico
+[bvs_legislations type="lei" max="15"]
+
+// Busca por título
+[bvs_legislations searchTitle="saúde pública" limit="10"]
+
+// Filtros combinados
+[bvs_legislations country="Brasil" type="decreto" max="30"]
+```
+
+### [bvs_bibliographic_databases] / [bvs_databases]
+
+Exibe bases bibliográficas da BVS Saúde.
+
+#### Parâmetros de Filtragem
+
+| Parâmetro | Descrição | Exemplo |
+|-----------|-----------|---------|
+| `country` | Filtrar por país | `country="Brasil"` |
+| `subject` | Filtrar por área temática | `subject="Medicina"` |
+| `search` | Busca livre | `search="cardiologia"` |
+| `searchTitle` | Buscar por título | `searchTitle="medline"` |
+| `type` | Filtrar por tipo | `type="bibliographic"` |
+
+#### Parâmetros de Configuração
+
+| Parâmetro | Descrição | Padrão |
+|-----------|-----------|--------|
+| `limit` | Itens por página | `12` |
+| `max` | Máximo de itens total | `50` |
+| `show_pagination` | Habilitar paginação | `false` |
+| `page` | Página inicial | `1` |
+| `show_fields` | Campos a exibir | `title,type,country,author` |
+| `showFilters` | Mostrar sidebar de filtros | `false` |
+
+#### Exemplos de Uso
+
+```php
+// Grid com bases do Brasil
+[bvs_databases country="Brasil" max="20"]
+
+// Busca por título
+[bvs_bibliographic_databases searchTitle="pubmed" limit="10"]
+
+// Filtros combinados
+[bvs_databases country="Brasil" subject="Saúde" max="30"]
+```
+
+## ⚠️ Shortcodes com Problemas Conhecidos
+
+### [bvs_events] e [bvs_multimedia]
+
+Estes shortcodes estão implementados mas apresentam problemas na integração com a API BVS:
+
+- **Problema**: Chamadas incorretas para os endpoints da API
+- **Sintoma**: Erros de conexão e timeouts
+- **Status**: Requer correção na configuração dos endpoints da API
+- **Solução**: Aguardando correção dos URLs dos endpoints na configuração do plugin
+
+**Não recomendado para uso em produção até correção dos problemas de API.**
 
 ## 🔧 API Client
 
@@ -303,6 +390,11 @@ $results = $client->listJournals(1, 20); // página, por_página
 #### Para Recursos Web
 
 ```php
+$client = new BvsaludClient();
+
+// Busca geral
+$results = $client->searchWebResources(['q' => 'biblioteca', 'count' => 20]);
+
 // Por país
 $resources = $client->getWebResourcesByCountry('Brazil', 10);
 
@@ -322,6 +414,68 @@ $resources = $client->searchWebResourcesByTerm('covid', 20);
 $results = $client->listWebResources(1, 20);
 ```
 
+#### Para Legislações
+
+```php
+$client = BvsaludClient::forLegislations();
+
+// Busca geral
+$results = $client->searchLegislations(['q' => 'lei orgânica', 'count' => 20]);
+
+// Por país
+$legislations = $client->getLegislationsByCountry('Brasil', 10);
+
+// Por assunto
+$legislations = $client->getLegislationsBySubject('Saúde Pública', 15);
+
+// Por título
+$legislations = $client->getLegislationsByTitle('lei orgânica', 10);
+
+// Por tipo
+$legislations = $client->getLegislationsByType('decreto', 10);
+
+// Listagem com paginação
+$results = $client->listLegislations(1, 20);
+```
+
+#### Para Bases Bibliográficas
+
+```php
+$client = new BvsaludClient();
+
+// Busca geral
+$results = $client->searchBibliographicDatabases(['q' => 'medline', 'count' => 20]);
+
+// Por país
+$databases = $client->getBibliographicDatabasesByCountry('Brasil', 10);
+
+// Listagem geral
+$results = $client->listBibliographicDatabases(1, 20);
+```
+
+#### Métodos de Teste de Conexão
+
+```php
+// Teste geral
+$test = $client->testConnection();
+
+// Teste específico para legislações
+$test = $client->testLegislationsConnection();
+
+// Teste específico para bases bibliográficas
+$test = $client->testBibliographicDatabasesConnection();
+```
+
+#### ⚠️ Métodos com Problemas Conhecidos
+
+```php
+// Estes métodos estão implementados mas apresentam problemas de API:
+// $client->searchEvents() - Erro de conexão
+// $client->searchMultimedia() - Erro de conexão
+// $client->testEventsConnection() - Falha na conexão
+// $client->testMultimediaConnection() - Falha na conexão
+```
+
 ## 📁 Estrutura do Projeto
 
 ```
@@ -332,7 +486,11 @@ api-consumer-wp-plugin/
 │   │   └── SettingsPage.php
 │   ├── API/                # Cliente e DTOs da API
 │   │   ├── BvsaludClient.php
+│   │   ├── BibliographicDatabaseDto.php
+│   │   ├── EventDto.php
 │   │   ├── JournalDto.php
+│   │   ├── LegislationDto.php
+│   │   ├── MultimediaDto.php
 │   │   └── WebResourceDto.php
 │   ├── Assets/             # CSS e JavaScript
 │   │   ├── admin.css
@@ -340,7 +498,11 @@ api-consumer-wp-plugin/
 │   │   ├── public.css
 │   │   └── public.js
 │   ├── Shortcodes/         # Shortcodes
+│   │   ├── BvsBibliographicDatabasesShortcode.php
+│   │   ├── BvsEventsShortcode.php
 │   │   ├── BvsJournalsShortcode.php
+│   │   ├── BvsLegislationsShortcode.php
+│   │   ├── BvsMultimediaShortcode.php
 │   │   └── BvsWebResourcesShortcode.php
 │   ├── Support/            # Helpers e utilitários
 │   │   ├── Cache.php
@@ -353,10 +515,14 @@ api-consumer-wp-plugin/
 │   ├── Autoloader.php
 │   └── Plugin.php
 ├── bvsalud-integrator.php  # Arquivo principal do plugin
+├── debug_multimedia.php    # Script de debug para multimídia
 ├── uninstall.php           # Script de desinstalação
-├── readme.txt              # README do WordPress.org
-├── README.md               # Este arquivo
-└── WEB_RESOURCES_USAGE.md  # Documentação detalhada
+├── .editorconfig           # Configuração do editor
+├── .php-cs-fixer.dist.php  # Configuração do PHP CS Fixer
+├── .prettierrc             # Configuração do Prettier
+├── .vscode/                # Configurações do VS Code
+├── languages/              # Arquivos de tradução
+└── README.md               # Este arquivo
 ```
 
 ## 🚀 Desenvolvimento

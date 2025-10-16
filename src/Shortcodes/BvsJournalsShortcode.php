@@ -12,16 +12,15 @@ if (!defined('ABSPATH')) exit;
  * 
  * Exemplos de uso:
  * [bvs_journals country="Brasil" max="20"] - Grid 4 colunas com até 20 journals do Brasil
- * [bvs_journals country="Argentina" max="12" template="grid"] - Grid personalizado
- * [bvs_journals subject="medicina" limit="10"] - Lista por assunto
- * [bvs_journals search="cardiologia" limit="5" template="compact"] - Busca compacta
+ * [bvs_journals country="Argentina" max="12"] - Grid personalizado
+ * [bvs_journals subject="medicina" limit="10"] - Grid por assunto
+ * [bvs_journals search="cardiologia" limit="5"] - Busca no grid
  * [bvs_journals searchTitle="saúde pública" limit="10"] - Busca por título
  */
 final class BvsJournalsShortcode {
     
     public function register(): void {
         add_shortcode('bvs_journals', [$this, 'render']);
-        add_action('wp_enqueue_scripts', [$this, 'enqueueAssets']);
     }
     
     public function render($atts, $content = ''): string {
@@ -35,9 +34,7 @@ final class BvsJournalsShortcode {
             'max' => 50, // quantidade máxima de journals a exibir
             'show_pagination' => 'false',
             'page' => 1,
-            'template' => 'default', // default, compact, detailed, grid
             'show_fields' => 'title,issn,publisher,country', // campos a exibir
-            'columns' => 4, // para template grid
             'showFilters' => 'false', // Mostrar barra lateral de filtros
             'showfilters' => 'false', // Mostrar barra lateral de filtros (minúsculo)
         ], $atts, 'bvs_journals');
@@ -51,8 +48,6 @@ final class BvsJournalsShortcode {
             'bvsIssn' => 'issn',
             'bvsLimit' => 'limit',
             'bvsMax' => 'max',
-            'bvsTemplate' => 'template',
-            'bvsColumns' => 'columns',
         ];
         
         foreach ($urlParams as $urlKey => $attrKey) {
@@ -77,9 +72,7 @@ final class BvsJournalsShortcode {
         $atts['show_pagination'] = $atts['show_pagination'] === 'true';
         $atts['showFilters'] = $atts['showFilters'] === 'true';
         
-        if (!empty($atts['country']) && $atts['template'] === 'default') {
-            $atts['template'] = 'grid';
-        }
+        // Sempre usa template grid
         
         $client = new BvsaludClient();
         $journals = [];
@@ -98,7 +91,7 @@ final class BvsJournalsShortcode {
                 $journals = $journal && $journal->isValid() ? [$journal] : [];
                 $totalJournals = count($journals);
                 } else {
-                $searchTitle = !empty($atts['searchTitle']) ? trim($atts['searchTitle']) : '';
+                 $searchTitle = !empty($atts['searchTitle']) ? trim($atts['searchTitle']) : '';
                 $search = !empty($atts['search']) ? trim($atts['search']) : '';
                 $subject = !empty($atts['subject']) ? trim($atts['subject']) : '';
                 $country = !empty($atts['country']) ? trim($atts['country']) : '';
@@ -181,7 +174,7 @@ final class BvsJournalsShortcode {
                 }
             }
             
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return $this->renderError('Erro ao buscar journals: ' . $e->getMessage());
         }
         
@@ -200,10 +193,7 @@ final class BvsJournalsShortcode {
             return $this->renderWithFilters($content, $atts);
         }
         
-        // Adiciona CSS inline diretamente no HTML
-        $css = '<style>' . $this->getInlineCSS() . '</style>';
-        
-        return $css . $content;
+        return $content;
     }
     
     /**
@@ -552,9 +542,8 @@ final class BvsJournalsShortcode {
      */
     private function renderFallback(array $journals, array $atts, int $total): string {
         $showFields = array_map('trim', explode(',', $atts['show_fields']));
-        $template = $atts['template'];
         
-        $html = '<div class="bvs-journals-container" data-template="' . esc_attr($template) . '">';
+        $html = '<div class="bvs-journals-container" data-template="grid">';
         
 
         if ($total > 0) {
@@ -574,14 +563,13 @@ final class BvsJournalsShortcode {
         }
         
 
-        $listClass = $template === 'grid' ? 'bvs-grid' : 'bvs-journals-list';
-        $html .= '<div class="' . $listClass . '" data-columns="' . esc_attr($atts['columns']) . '">';
+        $html .= '<div class="bvs-grid" data-columns="3">';
         
         foreach ($journals as $journal) {
             /** @var JournalDto $journal */
             if (!$journal->isValid()) continue;
             
-            $html .= $this->renderJournalItem($journal, $showFields, $template);
+            $html .= $this->renderJournalItem($journal, $showFields);
         }
         
         $html .= '</div>';
@@ -596,23 +584,11 @@ final class BvsJournalsShortcode {
         return $html;
     }
     
-    private function renderJournalItem(JournalDto $journal, array $showFields, string $template): string {
-        $itemClass = $template === 'grid' ? 'bvs-item' : 'bvs-journal-item';
-        $html = '<div class="' . $itemClass . '">';
+    private function renderJournalItem(JournalDto $journal, array $showFields): string {
+        $html = '<div class="bvs-item">';
         
-        switch ($template) {
-            case 'compact':
-                $html .= $this->renderCompactItem($journal, $showFields);
-                break;
-            case 'detailed':
-                $html .= $this->renderDetailedItem($journal, $showFields);
-                break;
-            case 'grid':
-                $html .= $this->renderGridItem($journal, $showFields);
-                break;
-            default:
-                $html .= $this->renderDefaultItem($journal, $showFields);
-        }
+        // Sempre usa o layout de grid
+        $html .= $this->renderGridItem($journal, $showFields);
         
         $html .= '</div>';
         
@@ -925,265 +901,4 @@ final class BvsJournalsShortcode {
         return '<div class="bvs-journals-empty"><p>' . esc_html__('Nenhum journal encontrado.', 'bvsalud-integrator') . '</p></div>';
     }
     
-    public function enqueueAssets(): void {
-        // Adicionar CSS específico para o shortcode
-        wp_add_inline_style('bv-public', $this->getInlineCSS());
-    }
-    
-    private function getInlineCSS(): string {
-        return '
-        .bvs-journals-container { margin: 20px 0; }
-        .bvs-journals-header { margin-bottom: 15px; }
-        .bvs-journals-count { font-size: 14px; color: #666; margin: 0; }
-        .bvs-journals-list { display: flex; flex-direction: column; gap: 15px; }
-        .bvs-journal-item { padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
-        .journal-title { margin: 0 0 10px 0; font-size: 18px; }
-        .journal-title a { color: #0073aa; text-decoration: none; }
-        .journal-title a:hover { text-decoration: underline; }
-        .journal-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 14px; }
-        .journal-meta span { display: inline-block; }
-        .journal-compact { padding: 8px 0; border-bottom: 1px solid #eee; }
-        .journal-compact:last-child { border-bottom: none; }
-        .journal-detailed .journal-details p { margin: 5px 0; }
-        .journal-link { display: inline-block; padding: 5px 10px; background: #0073aa; color: white; text-decoration: none; border-radius: 3px; font-size: 12px; }
-        .journal-link:hover { background: #005a87; color: white; }
-        
-        /* Grid Template - Reusable for all resources */
-        .bvs-grid { 
-            display: grid; 
-            gap: 24px 20px; 
-            grid-template-columns: repeat(4, 1fr); 
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-        .bvs-grid[data-columns="3"] { grid-template-columns: repeat(3, 1fr); }
-        .bvs-grid[data-columns="2"] { grid-template-columns: repeat(2, 1fr); }
-        .bvs-grid[data-columns="5"] { grid-template-columns: repeat(5, 1fr); }
-        .bvs-grid[data-columns="6"] { grid-template-columns: repeat(6, 1fr); }
-        
-        @media (max-width: 1200px) {
-            .bvs-grid { grid-template-columns: repeat(3, 1fr); }
-        }
-        @media (max-width: 768px) {
-            .bvs-grid { grid-template-columns: repeat(2, 1fr); gap: 20px 15px; }
-        }
-        @media (max-width: 480px) {
-            .bvs-grid { grid-template-columns: 1fr; gap: 15px; }
-        }
-        
-        .bvs-grid .bvs-item {
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            height: 100%;
-            box-sizing: border-box;
-            min-height: 380px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background: #f9f9f9;
-        }
-        .bvs-grid .bvs-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border-color: #0073aa;
-        }
-        
-        .bvs-item-content { 
-            display: flex; 
-            flex-direction: column; 
-            height: 100%;
-            box-sizing: border-box;
-        }
-        
-        .bvs-item-title { 
-            margin: 0 0 16px 0; 
-            font-size: 16px; 
-            font-weight: 600; 
-            line-height: 1.4;
-            flex-shrink: 0;
-            height: 44px;
-            overflow: hidden;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-        }
-        .bvs-item-title a { color: #2c3e50; text-decoration: none; }
-        .bvs-item-title a:hover { color: #0073aa; }
-        
-        .bvs-item-info { 
-            flex: 1 1 auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px;
-            min-height: 200px;
-        }
-        
-        .bvs-field { 
-            margin: 0; 
-            font-size: 13px; 
-            line-height: 1.5;
-            word-break: break-word;
-            min-height: 20px;
-        }
-        
-        .bvs-field-label { 
-            font-weight: 600; 
-            color: #495057;
-            display: inline;
-        }
-        
-        .bvs-field-value { 
-            color: #6c757d;
-            display: inline;
-        }
-        
-        .bvs-icon { margin-right: 4px; }
-        
-        .bvs-dates { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 8px; 
-            margin: 0; 
-            font-size: 12px;
-            line-height: 1.5;
-            min-height: 24px;
-        }
-        
-        .bvs-date { 
-            display: inline;
-            white-space: nowrap;
-        }
-        
-        .bvs-date-label { 
-            font-weight: 600; 
-            color: #495057; 
-        }
-        
-        .bvs-date-value { 
-            color: #6c757d; 
-        }
-        
-        .bvs-tags { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 6px; 
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #e9ecef;
-            min-height: 40px;
-            align-items: flex-start;
-        }
-        
-        .bvs-tag { 
-            display: inline-block; 
-            padding: 4px 10px; 
-            border-radius: 12px; 
-            font-size: 10px; 
-            font-weight: 600; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-        }
-        
-        .bvs-tag-primary { 
-            background: #e3f2fd; 
-            color: #1976d2; 
-            border: 1px solid #bbdefb; 
-        }
-        
-        .bvs-tag-secondary { 
-            background: #f3e5f5; 
-            color: #7b1fa2; 
-            border: 1px solid #e1bee7; 
-        }
-        
-        .bvs-item-actions { 
-            margin-top: 16px;
-            padding-top: 0;
-            flex-shrink: 0;
-        }
-        
-        .bvs-btn { 
-            display: block; 
-            width: 100%; 
-            padding: 10px 16px; 
-            background: #0073aa; 
-            color: white !important; 
-            text-align: center; 
-            text-decoration: none; 
-            border-radius: 4px; 
-            font-size: 13px; 
-            font-weight: 500; 
-            transition: background-color 0.3s ease;
-            box-sizing: border-box;
-            border: none;
-        }
-        
-        .bvs-btn:hover { 
-            background: #005a87; 
-            color: white !important; 
-        }
-        
-        /* Pagination - Generic */
-        .bvs-pagination { 
-            margin-top: 20px; 
-            text-align: center; 
-        }
-        .bvs-pagination .page-link { 
-            display: inline-block; 
-            padding: 8px 12px; 
-            margin: 0 2px; 
-            background: #f1f1f1; 
-            color: #333; 
-            text-decoration: none; 
-            border-radius: 3px; 
-            transition: background-color 0.3s ease;
-        }
-        .bvs-pagination .page-link:hover { 
-            background: #ddd; 
-        }
-        .bvs-pagination .page-link.current { 
-            background: #0073aa; 
-            color: white; 
-        }
-        .bvs-pagination .page-dots {
-            display: inline-block;
-            padding: 8px 12px;
-            color: #666;
-        }
-        
-        /* Resource Container */
-        .bvs-resources-container { 
-            margin: 20px 0; 
-        }
-        .bvs-resources-header { 
-            margin-bottom: 15px; 
-        }
-        .bvs-resources-count { 
-            font-size: 14px; 
-            color: #666; 
-            margin: 0; 
-        }
-        
-        /* Legacy support - backwards compatibility */
-        .bvs-journals-grid { display: grid; gap: 24px 20px; grid-template-columns: repeat(4, 1fr); margin: 20px 0; }
-        .bvs-journal-item { display: flex; flex-direction: column; height: 100%; box-sizing: border-box; min-height: 380px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
-        .journal-grid-content { display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
-        .journal-grid-title { margin: 0 0 16px 0; font-size: 16px; font-weight: 600; line-height: 1.4; height: 44px; overflow: hidden; }
-        .journal-grid-info { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; min-height: 200px; }
-        .journal-grid-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e9ecef; min-height: 40px; }
-        .journal-tag { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
-        .journal-tag-theme { background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; }
-        .journal-tag-country { background: #f3e5f5; color: #7b1fa2; border: 1px solid #e1bee7; }
-        .journal-grid-actions { margin-top: 16px; flex-shrink: 0; }
-        .journal-access-btn { display: block; width: 100%; padding: 10px 16px; background: #0073aa; color: white !important; text-align: center; text-decoration: none; border-radius: 4px; font-size: 13px; }
-        .bvs-journals-pagination { margin-top: 20px; text-align: center; }
-        .bvs-journals-pagination .page-link { display: inline-block; padding: 8px 12px; margin: 0 2px; background: #f1f1f1; color: #333; text-decoration: none; border-radius: 3px; }
-        .bvs-journals-pagination .page-link:hover { background: #ddd; }
-        .bvs-journals-pagination .page-link.current { background: #0073aa; color: white; }
-        .bvs-journals-error { padding: 15px; background: #ffebee; border: 1px solid #f44336; border-radius: 5px; color: #c62828; }
-        .bvs-journals-empty { padding: 15px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 5px; text-align: center; color: #666; }
-        ';
-    }
 }

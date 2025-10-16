@@ -13,46 +13,45 @@ if (!defined('ABSPATH')) exit;
  */
 final class BvsWebResourcesShortcode {
     
-    public function __construct() {
+    public function register(): void {
         add_shortcode('bvs_web_resources', [$this, 'render']);
-        add_action('wp_enqueue_scripts', [$this, 'enqueueAssets']);
     }
     
     public function render($atts, $content = ''): string {
         $atts = shortcode_atts([
             'country' => '',
             'subject' => '',
-            'term' => '',
-            'type' => '',
+            'search' => '',
             'searchTitle' => '',
-            'count' => 12,
+            'type' => '',
+            'limit' => 12,
             'max' => 50,
             'show_pagination' => 'false',
             'page' => 1,
-            'template' => 'default',
             'show_fields' => 'title,type,country',
-            'columns' => 4,
             'showFilters' => 'false',
             'showfilters' => 'false',
         ], $atts, 'bvs_web_resources');
         
-        // Mapear parâmetros da URL para atributos
+        // Parâmetros da URL sobrescrevem os do shortcode
         $urlParams = [
             'bvsCountry' => 'country',
             'bvsSubject' => 'subject',
-            'bvsTerm' => 'term',
-            'bvsType' => 'type',
             'bvsSearchTitle' => 'searchTitle',
-            'bvsTitle' => 'searchTitle',
-            'bvsCount' => 'count',
-            'bvsTemplate' => 'template',
-            'bvsColumns' => 'columns',
+            'bvsTitle' => 'searchTitle', // Alias para searchTitle
+            'bvsType' => 'type',
+            'bvsLimit' => 'limit',
+            'bvsMax' => 'max',
         ];
         
-        foreach ($urlParams as $urlKey => $attKey) {
+        foreach ($urlParams as $urlKey => $attrKey) {
             if (isset($_GET[$urlKey]) && !empty($_GET[$urlKey])) {
-                $atts[$attKey] = sanitize_text_field($_GET[$urlKey]);
+                $atts[$attrKey] = sanitize_text_field($_GET[$urlKey]);
             }
+        }
+        
+        if (isset($_GET['bvsPage'])) {
+            $atts['page'] = max(1, (int) $_GET['bvsPage']);
         }
         
         // Processar checkboxes de países
@@ -61,36 +60,41 @@ final class BvsWebResourcesShortcode {
             $atts['country'] = implode(',', $selectedCountries);
         }
         
-        // Sanitizar atributos
-        $atts['count'] = max(1, min(100, (int) $atts['count']));
-        $atts['max'] = max(1, min(1000, (int) $atts['max']));
+        $atts['limit'] = max(1, min(100, (int) $atts['limit']));
+        $atts['max'] = max(1, min(500, (int) $atts['max']));
         $atts['page'] = max(1, (int) $atts['page']);
-        $atts['columns'] = max(1, min(6, (int) $atts['columns']));
+        $atts['show_pagination'] = $atts['show_pagination'] === 'true';
+        $atts['showFilters'] = $atts['showFilters'] === 'true';
         
-        // Converter showFilters para boolean
-        $showFilters = filter_var($atts['showFilters'], FILTER_VALIDATE_BOOLEAN) || 
-                      filter_var($atts['showfilters'], FILTER_VALIDATE_BOOLEAN);
+        // Sempre usa template grid
+        
+        $client = new BvsaludClient(\BV\Admin\SettingsPage::getLisUrl());
+        $resources = [];
+        $totalResources = 0;
+        $error = null;
+        $results = [];
         
         try {
-            $client = new BvsaludClient();
+            $connectionTest = $client->testConnection();
+            if (!$connectionTest['success']) {
+                return $this->renderError('Erro de conexão com a API BVS: ' . $connectionTest['message']);
+            }
             
-            $country = trim($atts['country']);
-            $subject = trim($atts['subject']);
-            $term = trim($atts['term']);
-            $type = trim($atts['type']);
-            $searchTitle = trim($atts['searchTitle']);
+            $searchTitle = !empty($atts['searchTitle']) ? trim($atts['searchTitle']) : '';
+            $search = !empty($atts['search']) ? trim($atts['search']) : '';
+            $subject = !empty($atts['subject']) ? trim($atts['subject']) : '';
+            $country = !empty($atts['country']) ? trim($atts['country']) : '';
+            $type = !empty($atts['type']) ? trim($atts['type']) : '';
             
-            $resources = [];
-            $totalResources = 0;
-            $filterQuery = '';
             $queryParts = [];
+            $filterQuery = '';
             
             if (!empty($searchTitle)) {
                 $queryParts[] = 'title:"' . $searchTitle . '"';
             }
             
-            if (!empty($term)) {
-                $queryParts[] = $term;
+            if (!empty($search)) {
+                $queryParts[] = $search;
             }
             
             if (!empty($type)) {
@@ -118,10 +122,9 @@ final class BvsWebResourcesShortcode {
                         min($totalResources, $atts['max'])
                     );
                 } else {
-                    $start = ($atts['page'] - 1) * $atts['count'];
                     $results = $client->getWebResourcesByCountry(
                         $country, 
-                        $atts['count']
+                        $atts['limit']
                     );
                     $totalResources = $results['total'] ?? 0;
                 }
@@ -129,8 +132,8 @@ final class BvsWebResourcesShortcode {
             } else {
                 $searchParams = [
                     'q' => $finalQuery,
-                    'count' => $atts['count'],
-                    'start' => ($atts['page'] - 1) * $atts['count']
+                    'count' => $atts['limit'],
+                    'start' => ($atts['page'] - 1) * $atts['limit']
                 ];
                 
                 if (!empty($filterQuery)) {
@@ -148,6 +151,8 @@ final class BvsWebResourcesShortcode {
                     $results = $client->searchWebResources($searchParams);
                     $totalResources = $results['total'] ?? 0;
                 }
+                
+                // Converter arrays para DTOs
                 $rawResources = $results['resources'] ?? [];
                 $resources = array_filter(
                     array_map(function($resource) {
@@ -156,23 +161,30 @@ final class BvsWebResourcesShortcode {
                         }
                         $dto = new WebResourceDto($resource);
                         return $dto->isValid() ? $dto : null;
-                    }, $rawResources),
-                    function($r) { return $r !== null; }
+                    }, $rawResources)
                 );
             }
             
+        } catch (\Exception $e) {
+            return $this->renderError('Erro ao buscar recursos: ' . $e->getMessage());
+        }
+        
+        if (empty($resources)) {
+            $content = $this->renderEmpty();
+        } else {
             $content = $this->renderResources($resources, $atts, $totalResources);
+        }
+        
+        // Converte string para boolean (aceita tanto showFilters quanto showfilters)
+        $showFiltersValue = !empty($atts['showFilters']) ? $atts['showFilters'] : $atts['showfilters'];
+        $showFilters = filter_var($showFiltersValue, FILTER_VALIDATE_BOOLEAN);
             
-            // Se showFilters está ativo, renderizar com sidebar
+        // Se showFilters = true, renderiza com sidebar de filtros
             if ($showFilters) {
                 return $this->renderWithFilters($content, $atts);
             }
             
-            return $content;
-            
-        } catch (\Exception $e) {
-            return '<div class="bvs-error">Erro ao buscar recursos: ' . esc_html($e->getMessage()) . '</div>';
-        }
+        return $content;
     }
     
     /**
@@ -196,50 +208,38 @@ final class BvsWebResourcesShortcode {
      * Renderiza a sidebar de filtros
      */
     private function renderFiltersSidebar(array $atts): string {
-        $currentTitle = isset($_GET['bvsTitle']) ? sanitize_text_field($_GET['bvsTitle']) : '';
-        $currentTerm = isset($_GET['bvsTerm']) ? sanitize_text_field($_GET['bvsTerm']) : '';
-        $currentCountry = isset($_GET['bvsCountry']) ? sanitize_text_field($_GET['bvsCountry']) : '';
-        $currentType = isset($_GET['bvsType']) ? sanitize_text_field($_GET['bvsType']) : '';
-        $currentSubject = isset($_GET['bvsSubject']) ? sanitize_text_field($_GET['bvsSubject']) : '';
+        // Pegar valores atuais dos filtros (da URL ou do shortcode)
+        $currentTitle = $_GET['bvsTitle'] ?? $_GET['bvsSearchTitle'] ?? $atts['searchTitle'] ?? '';
+        $currentCountry = $_GET['bvsCountry'] ?? $atts['country'] ?? '';
+        $currentSubject = $_GET['bvsSubject'] ?? $atts['subject'] ?? '';
+        $currentType = $_GET['bvsType'] ?? $atts['type'] ?? '';
         
         ob_start();
         ?>
         <div class="bvs-filters-box">
-            <h3 class="bvs-filters-title">Filtros</h3>
+            <h3 class="bvs-filters-title">Filtros de Busca</h3>
             
-            <form method="get" action="">
-                <?php
-                // Preservar parâmetros existentes da URL
-                foreach ($_GET as $key => $value) {
-                    if (!in_array($key, ['bvsTitle', 'bvsTerm', 'bvsCountry', 'bvsType', 'bvsSubject', 'bvsCountries'])) {
-                        echo '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr($value) . '">';
-                    }
-                }
-                ?>
+            <form method="get" class="bvs-filters-form" id="bvsFiltersForm">
+                <!-- Preservar page_id e outros parâmetros necessários -->
+                <?php if (isset($_GET['page_id'])): ?>
+                    <input type="hidden" name="page_id" value="<?php echo esc_attr($_GET['page_id']); ?>">
+                <?php endif; ?>
                 
-                <!-- Filtro de Título -->
+                <!-- Preservar slug da página -->
+                <?php if (isset($_GET['pagename'])): ?>
+                    <input type="hidden" name="pagename" value="<?php echo esc_attr($_GET['pagename']); ?>">
+                <?php endif; ?>
+                
+                <!-- Busca por Título -->
                 <div class="bvs-filter-group">
-                    <label class="bvs-filter-label" for="bvsTitle">Título:</label>
+                    <label for="bvsTitle" class="bvs-filter-label">Buscar por Título:</label>
                     <input 
                         type="text" 
                         id="bvsTitle" 
                         name="bvsTitle" 
                         class="bvs-filter-input" 
-                        value="<?php echo esc_attr($currentTitle); ?>"
                         placeholder="Digite o título..."
-                    >
-                </div>
-                
-                <!-- Filtro de Termo -->
-                <div class="bvs-filter-group">
-                    <label class="bvs-filter-label" for="bvsTerm">Busca livre:</label>
-                    <input 
-                        type="text" 
-                        id="bvsTerm" 
-                        name="bvsTerm" 
-                        class="bvs-filter-input" 
-                        value="<?php echo esc_attr($currentTerm); ?>"
-                        placeholder="Digite o termo..."
+                        value="<?php echo esc_attr($currentTitle); ?>"
                     >
                 </div>
                 
@@ -249,7 +249,7 @@ final class BvsWebResourcesShortcode {
                     
                     <?php
                     // Obter países disponíveis da API
-                    $client = new BvsaludClient();
+                    $client = new BvsaludClient(\BV\Admin\SettingsPage::getLisUrl());
                     $availableCountries = $client->getAvailableCountries();
                     $selectedCountries = !empty($currentCountry) ? explode(',', $currentCountry) : [];
                     ?>
@@ -438,6 +438,8 @@ final class BvsWebResourcesShortcode {
         
         if (file_exists($templatePath)) {
             ob_start();
+            // Passa os cards convertidos para o template
+            $resources = $cards;
             include $templatePath;
             return ob_get_clean();
         }
@@ -449,48 +451,110 @@ final class BvsWebResourcesShortcode {
      * Converte WebResourceDto para ResourceCardDto
      */
     private function convertResourceToCard(WebResourceDto $resource, array $showFields): ResourceCardDto {
-        $card = new ResourceCardDto();
-        
-        // Título
-        $card->title = $resource->title ?? 'Sem título';
-        
-        // URL
-        $card->url = $resource->url ?? '#';
-        
-        // Tipo
-        if (in_array('type', $showFields)) {
-            $card->addField('Tipo', $resource->getFormattedType());
-        }
-        
-        // País
-        if (in_array('country', $showFields) && $resource->country) {
-            $card->addField('País', $resource->country);
-        }
-        
-        // Descrição
-        if (in_array('description', $showFields) && $resource->description) {
-            $card->addField('Descrição', $resource->description);
-        }
-        
-        // Instituição
-        if (in_array('institution', $showFields) && $resource->institution) {
-            $card->addField('Instituição', $resource->institution);
-        }
-        
-        // Idioma
-        if (in_array('language', $showFields)) {
-            $languages = $resource->getLanguagesString();
-            if ($languages) {
-                $card->addField('Idioma', $languages);
+        // 1. TÍTULO
+        $title = '';
+        if (in_array('title', $showFields) && $resource->title) {
+            $titleText = strlen($resource->title) > 60 ? substr($resource->title, 0, 57) . '...' : $resource->title;
+            if ($resource->url) {
+                $title = '<a href="' . esc_url($resource->url) . '" target="_blank" rel="noopener">' . esc_html($titleText) . '</a>';
+            } else {
+                $title = esc_html($titleText);
             }
         }
         
-        // Assunto
-        if (in_array('subject', $showFields) && $resource->subject_area) {
-            $card->addField('Assunto', $resource->subject_area);
+        // 2. CONTEÚDO (HTML formatado)
+        ob_start();
+        ?>
+        
+        
+        <?php if (!empty($resource->abstract)): ?>
+            <div class="bvs-field">
+                <p class="bvs-abstract"><?= esc_html($this->truncateText($resource->abstract, 120)) ?></p>
+            </div>
+        <?php endif; ?>
+        
+        <?php if ($resource->publisher): ?>
+            <div class="bvs-field">
+                <span class="bvs-field-label">Instituição:</span> 
+                <span class="bvs-field-value"><?= esc_html($this->truncateText($resource->publisher, 45)) ?></span>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (in_array('type', $showFields) && $resource->getFormattedType()): ?>
+            <div class="bvs-field">
+                <span class="bvs-field-label">Tipo:</span> 
+                <span class="bvs-field-value"><?= esc_html($this->truncateText($resource->getFormattedType(), 40)) ?></span>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (in_array('description', $showFields) && $resource->abstract): ?>
+            <div class="bvs-field">
+                <span class="bvs-field-label">Descrição:</span> 
+                <span class="bvs-field-value"><?= esc_html($this->truncateText($resource->abstract, 100)) ?></span>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (in_array('language', $showFields) && $resource->getLanguagesString()): ?>
+            <div class="bvs-field">
+                <span class="bvs-field-label">Idioma:</span> 
+                <span class="bvs-field-value"><?= esc_html($this->truncateText($resource->getLanguagesString(), 30)) ?></span>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (in_array('keywords', $showFields) && $resource->keywords): ?>
+            <div class="bvs-field">
+                <span class="bvs-field-label">Palavras-chave:</span> 
+                <span class="bvs-field-value"><?= esc_html($this->truncateText($resource->keywords, 50)) ?></span>
+            </div>
+        <?php endif; ?>
+        
+        <?php if (in_array('country', $showFields) && $resource->getFormattedCountry()): ?>
+            <div class="bvs-field">
+                <span class="bvs-field-label">País:</span> 
+                <span class="bvs-field-value"><?= esc_html($this->truncateText($resource->getFormattedCountry(), 30)) ?></span>
+            </div>
+        <?php endif; ?>
+        
+        <?php if ($resource->getFormattedCreatedDate() || $resource->getFormattedUpdatedDate()): ?>
+            <div class="bvs-dates">
+                <?php if ($resource->getFormattedCreatedDate()): ?>
+                    <div class="bvs-date">
+                        <span class="bvs-date-label">Criado:</span> 
+                        <span class="bvs-date-value"><?= esc_html($resource->getFormattedCreatedDate()) ?></span>
+                    </div>
+                <?php endif; ?>
+                <?php if ($resource->getFormattedUpdatedDate()): ?>
+                    <div class="bvs-date">
+                        <span class="bvs-date-label">Atualizado:</span> 
+                        <span class="bvs-date-value"><?= esc_html($resource->getFormattedUpdatedDate()) ?></span>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+        
+        <?php
+        $content = ob_get_clean();
+        
+        // 3. TAGS
+        $tags = [];
+        if ($resource->getFormattedSubjectArea()) {
+            $tags[] = $resource->getFormattedSubjectArea();
+        }
+        if ($resource->getFormattedCountry()) {
+            $tags[] = $resource->getFormattedCountry();
         }
         
-        return $card;
+        
+        // 4. LINK
+        $link = $resource->url ?? '';
+        
+        // Cria o ResourceCardDto
+        return new ResourceCardDto([
+            'title' => $title,
+            'content' => $content,
+            'link' => $link,
+            'tags' => $tags,
+        ]);
     }
     
     /**
@@ -534,7 +598,19 @@ final class BvsWebResourcesShortcode {
         return ob_get_clean();
     }
     
-    public function enqueueAssets(): void {
-        // O CSS público já é carregado pelo Plugin.php
+    
+    private function renderError(string $message): string {
+        return '<div class="bvs-error"><p><strong>Erro:</strong> ' . esc_html($message) . '</p></div>';
+    }
+    
+    private function renderEmpty(): string {
+        return '<div class="bvs-empty"><p>' . esc_html__('Nenhum recurso encontrado.', 'bvsalud-integrator') . '</p></div>';
+    }
+    
+    private function truncateText(string $text, int $maxLength): string {
+        if (strlen($text) <= $maxLength) {
+            return $text;
+        }
+        return substr($text, 0, $maxLength - 3) . '...';
     }
 }

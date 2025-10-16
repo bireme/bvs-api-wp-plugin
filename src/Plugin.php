@@ -10,9 +10,11 @@ use BV\Shortcodes\BvsMultimediaShortcode;
 use BV\Shortcodes\BvsLegislationsShortcode;
 use BV\Shortcodes\BvsBibliographicDatabasesShortcode;
 
-final class Plugin {
-    public function boot(): void {
-        
+final class Plugin
+{
+    public function boot(): void
+    {
+
         // Assets públicos
         add_action('wp_enqueue_scripts', [$this, 'enqueuePublicAssets']);
 
@@ -24,25 +26,27 @@ final class Plugin {
 
         // Shortcodes Principais
         (new BvsJournalsShortcode())->register();
-        (new BvsWebResourcesShortcode());
-        
+        (new BvsWebResourcesShortcode())->register();
+        (new BvsEventsShortcode())->register();
+
         // Shortcodes Adicionais (baseados nas URLs configuradas)
-        new BvsEventsShortcode();
-        new BvsMultimediaShortcode();
-        new BvsLegislationsShortcode();
-        new BvsBibliographicDatabasesShortcode();
+        (new BvsMultimediaShortcode())->register();
+        (new BvsLegislationsShortcode())->register();
+        (new BvsBibliographicDatabasesShortcode())->register();
 
         // Custom CSS/JS do admin (config) — só imprime no front se houver e usuário tiver salvo
         add_action('wp_head', [$this, 'printCustomCSS']);
         add_action('wp_footer', [$this, 'printCustomJS']);
     }
 
-    public function enqueuePublicAssets(): void {
+    public function enqueuePublicAssets(): void
+    {
         wp_enqueue_style('bv-public', BV_PLUGIN_URL . 'src/Assets/public.css', [], BV_VERSION);
         wp_enqueue_script('bv-public', BV_PLUGIN_URL . 'src/Assets/public.js', ['wp-element'], BV_VERSION, true);
     }
 
-    public function printCustomCSS(): void {
+    public function printCustomCSS(): void
+    {
         $css = get_option('bv_custom_css');
         if (!empty($css)) {
             // Permite HTML apenas para administradores
@@ -52,7 +56,8 @@ final class Plugin {
         }
     }
 
-    public function printCustomJS(): void {
+    public function printCustomJS(): void
+    {
         $js = get_option('bv_custom_js');
         if (!empty($js)) {
             // Permite JavaScript apenas para administradores
