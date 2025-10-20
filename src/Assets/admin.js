@@ -56,6 +56,4 @@
   } else {
     initApiResources();
   }
-})(); 
-
-
+})();

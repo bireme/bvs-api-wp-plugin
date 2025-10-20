@@ -1,0 +1,72 @@
+{
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.formatOnType": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  
+  // Configurações para PHP
+  "[php]": {
+    "editor.defaultFormatter": "junstyle.php-cs-fixer",
+    "editor.formatOnSave": true
+  },
+  
+  // Configurações para CSS
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  
+  // Configurações para JavaScript
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  
+  // Configurações para HTML
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  
+  // Configurações para JSON
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  
+  // PHP CS Fixer
+  "php-cs-fixer.executablePath": "/usr/local/bin/php-cs-fixer",
+  "php-cs-fixer.config": ".php-cs-fixer.dist.php",
+  "php-cs-fixer.allowRisky": false,
+  "php-cs-fixer.pathMode": "override",
+  "php-cs-fixer.executablePathWindows": "",
+  "php-cs-fixer.executablePathOSX": "/usr/local/bin/php-cs-fixer",
+  "php-cs-fixer.executablePathLinux": "/usr/local/bin/php-cs-fixer",
+  
+  // Prettier
+  "prettier.requireConfig": false,
+  "prettier.useEditorConfig": false,
+  
+  // Indentação
+  "editor.tabSize": 4,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": true,
+  
+  // Para PHP
+  "[php]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true
+  },
+  
+  // Para CSS/JS
+  "[css]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  "[javascript]": {
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  }
+}
