@@ -1,0 +1,101 @@
+services:
+  # --- Banco de dados do WordPress 1 ---
+  db1:
+    image: mysql:5.7
+    container_name: db1
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wp_db1
+      MYSQL_USER: wp_user
+      MYSQL_PASSWORD: wp_pass
+    volumes:
+      - db1_data:/var/lib/mysql
+    networks:
+      - wpnet
+
+  # --- Banco de dados do WordPress 2 ---
+  db2:
+    image: mysql:5.7
+    container_name: db2
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wp_db2
+      MYSQL_USER: wp_user
+      MYSQL_PASSWORD: wp_pass
+    volumes:
+      - db2_data:/var/lib/mysql
+    networks:
+      - wpnet
+
+  # --- WordPress 1 ---
+  wordpress1:
+    image: wordpress:latest
+    container_name: wordpress1
+    restart: always
+    depends_on:
+      - db1
+    ports:
+      - "8081:80"
+    environment:
+      WORDPRESS_DB_HOST: db1:3306
+      WORDPRESS_DB_USER: wp_user
+      WORDPRESS_DB_PASSWORD: wp_pass
+      WORDPRESS_DB_NAME: wp_db1
+      # 🔥 Ativa o modo debug do WordPress
+      WORDPRESS_DEBUG: 1
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_DEBUG', true );
+        define( 'WP_DEBUG_LOG', true );
+        define( 'WP_DEBUG_DISPLAY', true );
+        define( 'SCRIPT_DEBUG', true );
+    volumes:
+      - wp1_data:/var/www/html
+      # 🔥 Plugins montados diretamente do seu diretório local
+      - /var/dev/bireme/wp/api-consumer-wp-plugin:/var/www/html/wp-content/plugins/api-consumer-wp-plugin:cached
+      - /var/dev/bireme/wp/country-page-wp-plugin:/var/www/html/wp-content/plugins/country-page-wp-plugin:cached
+    networks:
+      - wpnet
+
+  # --- WordPress 2 ---
+  wordpress2:
+    image: wordpress:latest
+    container_name: wordpress2
+    restart: always
+    depends_on:
+      - db2
+    ports:
+      - "8082:80"
+    environment:
+      WORDPRESS_DB_HOST: db2:3306
+      WORDPRESS_DB_USER: wp_user
+      WORDPRESS_DB_PASSWORD: wp_pass
+      WORDPRESS_DB_NAME: wp_db2
+      # 🔥 Ativa o modo debug do WordPress
+      WORDPRESS_DEBUG: 1
+      WORDPRESS_CONFIG_EXTRA: |
+        define( 'WP_DEBUG', true );
+        define( 'WP_DEBUG_LOG', true );
+        define( 'WP_DEBUG_DISPLAY', true );
+        define( 'SCRIPT_DEBUG', true );
+    
+    volumes:
+      - wp2_data:/var/www/html
+      - /var/dev/bireme/wp/api-consumer-wp-plugin:/var/www/html/wp-content/plugins/api-consumer-wp-plugin:cached
+      - /var/dev/bireme/wp/country-page-wp-plugin:/var/www/html/wp-content/plugins/country-page-wp-plugin:cached
+    networks:
+      - wpnet
+
+# --- Volumes persistentes ---
+volumes:
+  db1_data:
+  db2_data:
+  wp1_data:
+  wp2_data:
+
+# --- Rede compartilhada ---
+networks:
+  wpnet:
+    driver: bridge
+

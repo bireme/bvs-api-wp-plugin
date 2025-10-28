@@ -20,10 +20,8 @@ Plugin WordPress para integração com a API BVS Saúde, permitindo exibir recur
 - 📱 **Layout responsivo**: grid de cards adaptável
 - 📄 **Paginação integrada**: navegação fácil entre resultados
 - 🎨 **Customizável**: CSS e JavaScript customizáveis
-- ⚡ **Sistema de cache**: otimização de performance
 - 🔒 **Seguro**: sanitização de inputs e escape de outputs
 - 🔄 **Genérico**: Um shortcode para todos os tipos de recursos
-- 🌐 **Suporte a múltiplos idiomas**: valores multilíngue extraídos automaticamente
 - 🏷️ **Tags de filtros ativos**: visualização dos filtros aplicados
 
 ## 📦 Instalação
@@ -90,7 +88,6 @@ O plugin utiliza um shortcode genérico `[bvs_resources]` que funciona com todos
 | Parâmetro | Descrição | Padrão |
 |-----------|-----------|--------|
 | `type` | Tipo de recurso | - |
-| `country` | Filtrar por país | - |
 | `subject` | Filtrar por área temática | - |
 | `search` | Busca livre | - |
 | `searchTitle` | Buscar por título específico | - |
@@ -103,8 +100,6 @@ O plugin utiliza um shortcode genérico `[bvs_resources]` que funciona com todos
 ### Exemplos de Uso
 
 ```php
-// Periódicos do Brasil
-[bvs_resources type="journals" country="Brazil" limit="10"]
 
 // Recursos web com filtros
 [bvs_resources type="webResources" show_filters="true"]
@@ -131,16 +126,8 @@ O shortcode aceita parâmetros através da URL para permitir links diretos e fil
 | `bvsMax` | `max` | `?bvsMax=50` |
 | `bvsPage` | `page` | `?bvsPage=2` |
 
-**Parâmetros de Filtros Dinâmicos**: Você pode usar qualquer chave de filtro configurada para os recursos através da URL. Por exemplo, se você configurou um filtro com a chave `publication_country`, pode usar:
-
-```
-?publication_country[]=Brazil&publication_country[]=Argentina
-```
-
-Para múltiplos valores (checkboxes), use a notação de array `[]`.
 
 ### Filtros Interativos
-
 Ative `show_filters="true"` para exibir sidebar com filtros:
 
 ```php
@@ -150,7 +137,6 @@ Ative `show_filters="true"` para exibir sidebar com filtros:
 **Funcionalidades:**
 - ✅ Campo de busca por título
 - ✅ Checkboxes dinâmicos baseados nos filtros configurados
-- ✅ Seleção múltipla de valores (através de checkboxes)
 - ✅ Botões "Buscar" e "Limpar"
 - ✅ Tags de filtros ativos visíveis
 - ✅ Contagem de resultados por filtro
@@ -170,36 +156,7 @@ Na página de configurações, você pode adicionar CSS para personalizar:
 - Filtros sidebar
 - Paginação
 
-Exemplo de CSS customizado:
 
-```css
-/* Personalizar cards */
-.bvs-resource-card {
-    border: 2px solid #0073aa;
-    transition: transform 0.3s;
-}
-
-.bvs-resource-card:hover {
-    transform: translateY(-5px);
-}
-
-/* Personalizar filtros */
-.bvs-filter-checkbox {
-    accent-color: #0073aa;
-}
-```
-
-### JavaScript Customizado
-
-Adicione JavaScript para funcionalidades personalizadas:
-
-```javascript
-// Exemplo: Adicionar comportamento ao carregar a página
-jQuery(document).ready(function($) {
-    // Seu código customizado aqui
-    console.log('BVSalud Integrator carregado');
-});
-```
 
 **Nota**: CSS e JavaScript customizados são executados apenas para usuários administradores com a capacidade `unfiltered_html`.
 
@@ -283,7 +240,6 @@ api-consumer-wp-plugin/
 
 - PHP 7.4+
 - WordPress 5.0+
-- Composer (opcional, para dependências)
 
 ### Padrões de Código
 
@@ -291,16 +247,13 @@ api-consumer-wp-plugin/
 - **PSR-12** para coding standards
 - **Namespaces**: `BV\*`
 - Classes finais para DTOs e Shortcodes
-- Type hints (PHP 7.4+)
 
 ### Extensibilidade
-
 O plugin foi projetado para ser facilmente extensível:
 
 1. **Adicionar novos tipos de recursos**: Crie novos DTOs e conversores
 2. **Customizar templates**: Edite os templates em `src/Templates/`
 3. **Adicionar novos filtros**: Configure na página de configurações
-4. **Hook em ações WordPress**: Use hooks padrão do WordPress
 
 ### Desenvolvimento Local
 
@@ -312,37 +265,16 @@ git clone [repository-url] wp-content/plugins/api-consumer-wp-plugin
 wp plugin activate api-consumer-wp-plugin
 ```
 
-## 🔒 Segurança
+## Utilize o docker compose dentro da pasta TestResources para testes locais, o arquivo gera um ambiente wp:
+Altere o trecho abaixo para apontar para sua pasta de desenvolvimento do plugin:
 
-O plugin implementa diversas medidas de segurança:
+volumes:
+- wp1_data:/var/www/html
+# 🔥 Plugins montados diretamente do seu diretório local
+- /var/dev/bireme/wp/api-consumer-wp-plugin:/var/www/html/wp-content/plugins/api-consumer-wp-plugin:cached
+- /var/dev/bireme/wp/country-page-wp-plugin:/var/www/html/wp-content/plugins/country-page-wp-plugin:cached
 
-### Entrada de Dados (Input)
 
-- ✅ **Sanitização**: Todos os inputs são sanitizados usando funções do WordPress
-- ✅ **Validação**: Validação de tipos e limites
-- ✅ **Nonces**: Proteção contra CSRF em todos os formulários
-
-### Saída de Dados (Output)
-
-- ✅ **Escaping**: Todos os outputs usam funções de escape apropriadas (`esc_html`, `esc_url`, etc.)
-- ✅ **Prepared Statements**: Não aplicável (não há database direto)
-
-### Acesso e Permissões
-
-- ✅ **Capability Checks**: Verificação de permissões (`manage_options`)
-- ✅ **ABSPATH Check**: Previne acesso direto a arquivos PHP
-- ✅ **unfiltered_html**: CSS/JS customizados apenas para usuários com capacidade especial
-
-### API
-
-- ✅ **Token Authentication**: Suporte a tokens de autenticação
-- ✅ **URL Sanitization**: URLs validadas antes de uso
-- ✅ **Rate Limiting**: Implementado através de cache
-
-### Cache
-
-- ✅ **Transients API**: Usa WordPress Transients para cache seguro
-- ✅ **Expiration**: Cache com tempo de expiração configurável
 
 ## 🐛 Troubleshooting
 
