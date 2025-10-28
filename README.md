@@ -11,7 +11,6 @@ Plugin WordPress para integração com a API BVS Saúde, permitindo exibir recur
 - [API Client](#-api-client)
 - [Personalização](#-personalização)
 - [Desenvolvimento](#-desenvolvimento)
-- [Segurança](#-segurança)
 
 ## ✨ Características
 
