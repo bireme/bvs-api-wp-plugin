@@ -103,9 +103,90 @@ final class SettingsPage
             <form method="post" action="options.php" style="width: 100%;">
                 <?php
                 settings_fields('bv_settings');
-                do_settings_sections('bvsalud-integrator');
-                submit_button();
                 ?>
+
+                <div class="bv-config-layout">
+                    <div class="bv-config-main">
+                        <h2><?php esc_html_e('Configurações da API', 'bvsalud-integrator'); ?></h2>
+                        <p><?php esc_html_e('Configure a URL da API BVS Saúde e token de acesso.', 'bvsalud-integrator'); ?></p>
+
+                        <table class="form-table" role="presentation">
+                            <tbody>
+                                <tr>
+                                    <th scope="row">
+                                        <label
+                                            for="<?php echo esc_attr(self::OPTION_BVSALUD_TOKEN); ?>"><?php esc_html_e('Token BVS Saúde', 'bvsalud-integrator'); ?></label>
+                                    </th>
+                                    <td>
+                                        <?php
+                                        $value = get_option(self::OPTION_BVSALUD_TOKEN, '');
+                                        ?>
+                                        <input type="password" name="<?php echo esc_attr(self::OPTION_BVSALUD_TOKEN); ?>"
+                                            id="<?php echo esc_attr(self::OPTION_BVSALUD_TOKEN); ?>" class="regular-text"
+                                            placeholder="<?php esc_attr_e('Token de acesso', 'bvsalud-integrator'); ?>"
+                                            value="<?php echo esc_attr($value); ?>" />
+                                        <p class="description">
+                                            <?php esc_html_e('Token de autenticação para acesso à API BVS Saúde.', 'bvsalud-integrator'); ?>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h2><?php esc_html_e('URLs de Recursos BVS', 'bvsalud-integrator'); ?></h2>
+                        <p><?php esc_html_e('Configure as URLs dos diferentes recursos da BVS Saúde.', 'bvsalud-integrator'); ?>
+                        </p>
+
+                        <?php $this->renderApiResourcesField(); ?>
+                    </div>
+
+                    <?php
+                    // Renderizar modal apenas uma vez
+                    $this->renderFiltersModal();
+                    ?>
+
+                    <div class="bv-config-sidebar">
+                        <h2><?php esc_html_e('Personalização CSS/JS', 'bvsalud-integrator'); ?></h2>
+                        <p><?php esc_html_e('Adicione CSS e JavaScript customizados para personalizar a exibição dos dados.', 'bvsalud-integrator'); ?>
+                        </p>
+
+                        <table class="form-table" role="presentation">
+                            <tbody>
+                                <tr>
+                                    <th scope="row">
+                                        <label
+                                            for="<?php echo esc_attr(self::OPTION_CUSTOM_CSS); ?>"><?php esc_html_e('CSS customizado', 'bvsalud-integrator'); ?></label>
+                                    </th>
+                                    <td>
+                                        <?php
+                                        $cssValue = esc_textarea(get_option(self::OPTION_CUSTOM_CSS, ''));
+                                        ?>
+                                        <textarea name="<?php echo esc_attr(self::OPTION_CUSTOM_CSS); ?>"
+                                            id="<?php echo esc_attr(self::OPTION_CUSTOM_CSS); ?>" rows="12"
+                                            class="large-text code"
+                                            placeholder="/* Seu CSS */"><?php echo $cssValue; ?></textarea>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">
+                                        <label
+                                            for="<?php echo esc_attr(self::OPTION_CUSTOM_JS); ?>"><?php esc_html_e('JS customizado', 'bvsalud-integrator'); ?></label>
+                                    </th>
+                                    <td>
+                                        <?php
+                                        $jsValue = esc_textarea(get_option(self::OPTION_CUSTOM_JS, ''));
+                                        ?>
+                                        <textarea name="<?php echo esc_attr(self::OPTION_CUSTOM_JS); ?>"
+                                            id="<?php echo esc_attr(self::OPTION_CUSTOM_JS); ?>" rows="12"
+                                            class="large-text code" placeholder="// Seu JS"><?php echo $jsValue; ?></textarea>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <?php submit_button(); ?>
             </form>
         </div>
         <?php
@@ -141,10 +222,28 @@ final class SettingsPage
         $sanitized = [];
         foreach ($value as $resource) {
             if (isset($resource['resource']) && isset($resource['base_url'])) {
-                $sanitized[] = [
+                $sanitizedResource = [
                     'resource' => sanitize_text_field($resource['resource']),
                     'base_url' => esc_url_raw($resource['base_url'])
                 ];
+
+                // Sanitizar filtros se existirem
+                if (isset($resource['filter_types']) && is_array($resource['filter_types'])) {
+                    $sanitizedResource['filter_types'] = [];
+                    foreach ($resource['filter_types'] as $filter) {
+                        if (
+                            isset($filter['key']) && isset($filter['label']) &&
+                            !empty(trim($filter['key'])) && !empty(trim($filter['label']))
+                        ) {
+                            $sanitizedResource['filter_types'][] = [
+                                'key' => sanitize_text_field(trim($filter['key'])),
+                                'label' => sanitize_text_field(trim($filter['label']))
+                            ];
+                        }
+                    }
+                }
+
+                $sanitized[] = $sanitizedResource;
             }
         }
 
@@ -163,37 +262,125 @@ final class SettingsPage
             $resources = $this->migrateOldSettings();
         }
 
+        echo '<div class="resources-table-wrapper">';
         echo '<div id="api-resources-container">';
+        echo '<table class="resources-table">';
+
+        // Cabeçalho da tabela
+        echo '<thead>';
+        echo '<tr>';
+        echo '<th style="width: 15%;">' . esc_html__('Tipo', 'bvsalud-integrator') . '</th>';
+        echo '<th style="width: 55%;">' . esc_html__('URL', 'bvsalud-integrator') . '</th>';
+        echo '<th style="width: 15%;">' . esc_html__('Filtros', 'bvsalud-integrator') . '</th>';
+        echo '<th style="width: 15%;">' . esc_html__('Ações', 'bvsalud-integrator') . '</th>';
+        echo '</tr>';
+        echo '</thead>';
+
+        // Corpo da tabela
+        echo '<tbody>';
 
         // Campos existentes
         foreach ($resources as $index => $resource) {
+            echo '<tr class="resource-row">';
             $this->renderResourceRow($resource, $index);
+            echo '</tr>';
         }
 
         // Template para novos recursos
-        echo '<div id="resource-template" style="display: none;">';
-        $this->renderResourceRow(['resource' => '', 'base_url' => ''], 'INDEX');
+        echo '<tr id="resource-template" style="display: none;" class="resource-row">';
+        $this->renderResourceRow(['resource' => '', 'base_url' => '', 'filter_types' => []], 'INDEX');
+        echo '</tr>';
+
+        echo '</tbody>';
+        echo '</table>';
+        echo '</div>';
         echo '</div>';
 
-        echo '<button type="button" id="add-resource" class="button button-secondary">' . esc_html__('+ Adicionar', 'bvsalud-integrator') . '</button>';
-        echo '</div>';
-
-        echo '<p class="description">' . esc_html__('Configure os tipos de recursos e suas URLs da API BVSalud.', 'bvsalud-integrator') . '</p>';
+        echo '<button type="button" id="add-resource" class="button button-secondary">' . esc_html__('+ Adicionar Recurso', 'bvsalud-integrator') . '</button>';
     }
 
     /**
-     * Renderiza uma linha de recurso
+     * Renderiza o modal para gerenciar filtros
+     */
+    private function renderFiltersModal(): void
+    {
+        ?>
+        <div id="filters-modal" class="filters-modal" style="display: none;">
+            <div class="filters-modal-overlay"></div>
+            <div class="filters-modal-content">
+                <div class="filters-modal-header">
+                    <h2><?php esc_html_e('Gerenciar Filtros', 'bvsalud-integrator'); ?></h2>
+                    <button type="button" class="filters-modal-close">&times;</button>
+                </div>
+                <div class="filters-modal-body">
+                    <div id="filters-container" class="filters-list-dragable"></div>
+                    <div style="margin-top: 16px;">
+                        <button type="button" id="add-filter-btn" class="button button-secondary">
+                            <?php esc_html_e('+ Adicionar Filtro', 'bvsalud-integrator'); ?>
+                        </button>
+                    </div>
+                </div>
+                <div class="filters-modal-footer">
+                    <button type="button" id="save-filters-btn" class="button button-primary">
+                        <?php esc_html_e('Salvar', 'bvsalud-integrator'); ?>
+                    </button>
+                    <button type="button"
+                        class="filters-modal-close button"><?php esc_html_e('Cancelar', 'bvsalud-integrator'); ?></button>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
+    /**
+     * Renderiza uma linha de recurso (células da tabela)
      */
     private function renderResourceRow(array $resource, $index): void
     {
         $resourceValue = esc_attr($resource['resource'] ?? '');
         $urlValue = esc_url($resource['base_url'] ?? '');
+        $filters = $resource['filter_types'] ?? [];
+        $filterCount = count($filters);
+        ?>
+        <td>
+            <input type="text"
+                name="<?php echo esc_attr(self::OPTION_API_RESOURCES); ?>[<?php echo esc_attr($index); ?>][resource]"
+                placeholder="<?php esc_attr_e('ex: journals', 'bvsalud-integrator'); ?>"
+                value="<?php echo $resourceValue; ?>" />
+        </td>
+        <td>
+            <input type="url"
+                name="<?php echo esc_attr(self::OPTION_API_RESOURCES); ?>[<?php echo esc_attr($index); ?>][base_url]"
+                placeholder="https://api.bvsalud.org/..." value="<?php echo $urlValue; ?>" />
+        </td>
+        <td>
+            <div class="filters-compact">
+                <span class="filter-count"><?php echo esc_html($filterCount); ?></span>
+                <button type="button" class="button button-secondary manage-filters-btn"
+                    data-index="<?php echo esc_attr($index); ?>"><?php esc_html_e('Gerenciar', 'bvsalud-integrator'); ?></button>
 
-        echo '<div class="resource-row" style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center;">';
-        echo '<input type="text" name="' . esc_attr(self::OPTION_API_RESOURCES) . '[' . $index . '][resource]" placeholder="' . esc_attr__('Tipo (ex: journals)', 'bvsalud-integrator') . '" value="' . $resourceValue . '" style="width: 150px;" />';
-        echo '<input type="url" name="' . esc_attr(self::OPTION_API_RESOURCES) . '[' . $index . '][base_url]" placeholder="https://api.bvsalud.org/..." value="' . $urlValue . '" style="flex: 1; min-width: 400px;" />';
-        echo '<button type="button" class="button remove-resource" style="color: #d63638;">' . esc_html__('×', 'bvsalud-integrator') . '</button>';
-        echo '</div>';
+                <?php if (!empty($filters)): ?>
+                    <div class="filters-display" data-index="<?php echo esc_attr($index); ?>" style="display: none;">
+                        <?php foreach ($filters as $filterIndex => $filter): ?>
+                            <div class="filter-item">
+                                <input type="hidden"
+                                    name="<?php echo esc_attr(self::OPTION_API_RESOURCES); ?>[<?php echo esc_attr($index); ?>][filter_types][<?php echo esc_attr($filterIndex); ?>][key]"
+                                    value="<?php echo esc_attr($filter['key'] ?? ''); ?>" />
+                                <input type="hidden"
+                                    name="<?php echo esc_attr(self::OPTION_API_RESOURCES); ?>[<?php echo esc_attr($index); ?>][filter_types][<?php echo esc_attr($filterIndex); ?>][label]"
+                                    value="<?php echo esc_attr($filter['label'] ?? ''); ?>" />
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <script type="application/json"
+                        class="filter-data-<?php echo esc_attr($index); ?>"><?php echo wp_json_encode($filters); ?></script>
+                <?php endif; ?>
+            </div>
+        </td>
+        <td>
+            <button type="button" class="button remove-resource"><?php esc_html_e('Remover', 'bvsalud-integrator'); ?></button>
+        </td>
+        <?php
     }
 
     /**

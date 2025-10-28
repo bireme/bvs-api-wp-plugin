@@ -1,2 +1,447 @@
 /* Country Pages - Admin styles */
 #cp-custom-css, #cp-custom-js { font-family: monospace; }
+
+/* Resource filters modal */
+.filters-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.filters-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.filters-modal-content {
+    position: relative;
+    background: white;
+    border-radius: 4px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    z-index: 1;
+}
+
+.filters-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filters-modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.filters-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    line-height: 1;
+}
+
+.filters-modal-close:hover {
+    color: #000;
+}
+
+.filters-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.filters-modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.filters-list-dragable {
+    min-height: 200px;
+    border: 1px dashed #ddd;
+    padding: 10px;
+    background: #f9f9f9;
+}
+
+.filter-item-draggable {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.filter-item-draggable:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.filter-item-draggable.dragging {
+    opacity: 0.5;
+    border: 2px dashed #2271b1;
+}
+
+.filter-item-draggable.drag-over {
+    border-top: 2px solid #2271b1;
+}
+
+.filter-handle {
+    cursor: move;
+    margin-right: 10px;
+    color: #999;
+    font-size: 18px;
+}
+
+.filter-inputs {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+}
+
+.filter-inputs input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.filter-remove-btn {
+    background: #d63638;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.empty-filters {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+/* Resource row enhancements */
+.resource-row {
+    transition: all 0.2s;
+}
+
+.resource-row:hover {
+    border-color: #2271b1;
+}
+
+.filters-section {
+    transition: background 0.2s;
+}
+
+.filters-badge {
+    display: inline-block;
+    background: #2271b1;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-right: 4px;
+    margin-bottom: 4px;
+}
+
+/* Layout de duas colunas para configurações */
+.bv-config-layout {
+    display: grid;
+    grid-template-columns: 60% 40%;
+    gap: 30px;
+    margin-top: 30px;
+    align-items: start;
+}
+
+.bv-config-main {
+    min-width: 0;
+}
+
+.bv-config-sidebar {
+    background: #f9f9f9;
+    padding: 25px;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 32px;
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+}
+
+.bv-config-main h2,
+.bv-config-sidebar h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #2271b1;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.bv-config-main h2:not(:first-child) {
+    margin-top: 40px;
+}
+
+.bv-config-main p,
+.bv-config-sidebar p {
+    color: #646970;
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.bv-config-sidebar p {
+    margin-bottom: 25px;
+}
+
+/* Estilo para as tabelas de formulário em colunas */
+.bv-config-main .form-table,
+.bv-config-sidebar .form-table {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+.bv-config-sidebar .form-table {
+    margin-bottom: 25px;
+}
+
+.bv-config-sidebar .form-table td {
+    padding: 10px 0;
+}
+
+.bv-config-sidebar textarea {
+    resize: vertical;
+    min-height: 200px;
+}
+
+/* Scrollbar customizado para sidebar */
+.bv-config-sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.bv-config-sidebar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.bv-config-sidebar::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.bv-config-sidebar::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Responsividade */
+@media screen and (max-width: 1400px) {
+    .bv-config-layout {
+        grid-template-columns: 55% 45%;
+    }
+}
+
+@media screen and (max-width: 1200px) {
+    .bv-config-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .bv-config-sidebar {
+        position: relative;
+        top: 0;
+        max-height: none;
+        margin-top: 30px;
+    }
+    
+    /* Em telas menores, ajustar layout dos recursos */
+    .resources-table-wrapper {
+        overflow-x: auto;
+    }
+    
+    .resources-table {
+        min-width: 800px;
+    }
+}
+
+/* Espaçamento dos recursos */
+#api-resources-container {
+    margin-top: 15px;
+    max-height: 600px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 4px;
+    background: #fff;
+}
+
+#api-resources-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+#api-resources-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#api-resources-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+#api-resources-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Tabela de recursos */
+.resources-table-wrapper {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.resources-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.resources-table thead {
+    background: #f7f7f7;
+    border-bottom: 2px solid #ddd;
+}
+
+.resources-table th {
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-right: 1px solid #ddd;
+    font-size: 14px;
+}
+
+.resources-table th:last-child {
+    border-right: none;
+}
+
+.resources-table td {
+    padding: 12px 15px;
+    border-right: 1px solid #e5e5e5;
+    border-bottom: 1px solid #e5e5e5;
+    vertical-align: middle;
+}
+
+.resources-table td:last-child {
+    border-right: none;
+}
+
+.resources-table tbody tr {
+    transition: background-color 0.2s;
+}
+
+.resources-table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+.resources-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Campos de input dos recursos */
+.resources-table input[type="text"],
+.resources-table input[type="url"] {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.resources-table input[type="text"]:focus,
+.resources-table input[type="url"]:focus {
+    outline: none;
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+}
+
+/* Seção de filtros simplificada */
+.filters-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    background: #2271b1;
+    color: white;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.manage-filters-btn {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    height: 32px !important;
+    line-height: 1 !important;
+}
+
+/* Botão de remover */
+.resources-table .remove-resource {
+    background: #d63638;
+    color: white;
+    border: none;
+    padding: 6px 15px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    height: 32px;
+    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.resources-table .remove-resource:hover {
+    background: #b52727;
+}
+
+/* Botão adicionar */
+#add-resource {
+    margin-top: 15px;
+    height: 36px;
+}

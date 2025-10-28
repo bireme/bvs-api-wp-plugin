@@ -108,10 +108,9 @@ final class AdminMenu
                 <div class="card" style="flex: 1; min-width: 300px;">
                     <h3><?php esc_html_e('Parâmetros via URL', 'bvsalud-integrator'); ?></h3>
                     <ul style="list-style: none; padding: 0;">
-                        <li style="margin-bottom: 8px;"><code>?bvsType=journals&bvsCountry=Brazil</code></li>
-                        <li style="margin-bottom: 8px;"><code>?bvsSearch=medicina&bvsLimit=20</code></li>
-                        <li style="margin-bottom: 8px;"><code>?bvsCountries[]=Brazil&bvsCountries[]=Argentina</code></li>
-                        <li style="margin-bottom: 8px;"><code>?bvsSubject=Medicina&bvsPage=2</code></li>
+                        <li style="margin-bottom: 8px;"><code>?bvsType=journals&bvsLimit=20</code></li>
+                        <li style="margin-bottom: 8px;"><code>?bvsSearch=medicina&bvsPage=2</code></li>
+                        <li style="margin-bottom: 8px;"><code>?bvsSearchTitle=Medicina</code></li>
                     </ul>
                 </div>
 

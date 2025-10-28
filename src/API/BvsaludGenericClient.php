@@ -55,7 +55,7 @@ final class BvsaludGenericClient
             return $value !== '' && $value !== null;
         });
 
-        
+
         // Construir URL completa
         $searchUrl = $this->apiUrl . '/search/';
         $url = add_query_arg($queryParams, $searchUrl);
@@ -131,7 +131,7 @@ final class BvsaludGenericClient
         // Formato atual da API BVS com diaServerResponse como array
         if (isset($data['diaServerResponse']) && is_array($data['diaServerResponse']) && !empty($data['diaServerResponse'])) {
             $diaResponse = $data['diaServerResponse'][0]; // Primeiro elemento do array
-            
+
             return [
                 'total' => $diaResponse['response']['numFound'] ?? 0,
                 'start' => $diaResponse['response']['start'] ?? 0,
@@ -145,7 +145,7 @@ final class BvsaludGenericClient
         // Formato alternativo - diaServerResponse como objeto
         if (isset($data['diaServerResponse']) && is_array($data['diaServerResponse'])) {
             $response = $data['diaServerResponse'];
-            
+
             return [
                 'total' => $response['response']['numFound'] ?? 0,
                 'start' => $response['response']['start'] ?? 0,
@@ -193,131 +193,7 @@ final class BvsaludGenericClient
     }
 
 
-    /**
-     * Obtém facet_fields da API para popular filtros
-     */
-    public function getFacetFields(array $facetFields = ['publication_country']): array
-    {
-        if (!$this->apiUrl || !$this->token) {
-            return ['error' => 'API URL ou token não configurados'];
-        }
 
-        $defaults = [
-            'q' => '*:*',
-            'count' => 0,  // Não precisamos dos resultados, só dos facets
-            'format' => 'json',
-            'facet' => 'true',
-            'facet_field' => implode(',', $facetFields),
-        ];
-
-        $baseUrl = rtrim($this->apiUrl, '/') . '/search/';
-        $url = add_query_arg($defaults, $baseUrl);
-
-
-        $cacheKey = 'bv_bvs_facets_' . md5($url);
-
-        // Cache por 1 hora
-        return Cache::remember($cacheKey, function () use ($url) {
-            // Fazer request direto sem normalização para pegar facets
-            $headers = [
-                'accept' => '*/*',
-                'apikey' => $this->token,
-                'User-Agent' => 'BVSalud-Integrator-Plugin/' . BV_VERSION
-            ];
-
-            $args = [
-                'headers' => $headers,
-                'timeout' => $this->timeout,
-                'sslverify' => true,
-                'method' => 'GET'
-            ];
-
-            $response = wp_remote_get($url, $args);
-
-            if (is_wp_error($response)) {
-                return ['error' => 'Erro de conexão: ' . $response->get_error_message()];
-            }
-
-            $responseCode = wp_remote_retrieve_response_code($response);
-            $body = wp_remote_retrieve_body($response);
-
-            if ($responseCode !== 200) {
-                return [
-                    'error' => sprintf(
-                        'Erro HTTP %d: %s',
-                        $responseCode,
-                        wp_remote_retrieve_response_message($response)
-                    )
-                ];
-            }
-
-            $data = json_decode($body, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return ['error' => 'Erro ao decodificar JSON: ' . json_last_error_msg()];
-            }
-
-
-            return $data;
-        }, 3600);
-    }
-
-    /**
-     * Obtém lista de países disponíveis para filtros
-     * 
-     * @param string $langPrefix Prefixo do idioma para exibição (padrão: 'pt-br')
-     * @return array Array com países contendo 'name', 'raw' e 'count'
-     */
-    public function getAvailableCountries(string $langPrefix = 'pt-br'): array
-    {
-        $facets = $this->getFacetFields(['publication_country']);
-
-        if (isset($facets['error'])) {
-            return [];
-        }
-
-        $countries = [];
-
-
-        // Tentar diferentes estruturas de resposta
-        $countryFacets = null;
-
-        if (isset($facets['diaServerResponse'][0]['facet_counts']['facet_fields']['publication_country'])) {
-            $countryFacets = $facets['diaServerResponse'][0]['facet_counts']['facet_fields']['publication_country'];
-        } elseif (isset($facets['facet_counts']['facet_fields']['publication_country'])) {
-            $countryFacets = $facets['facet_counts']['facet_fields']['publication_country'];
-        } elseif (isset($facets['response']['facet_counts']['facet_fields']['publication_country'])) {
-            $countryFacets = $facets['response']['facet_counts']['facet_fields']['publication_country'];
-        }
-
-        if ($countryFacets) {
-            // Os facets vêm como array aninhado: [[nome, count], [nome, count], ...]
-            foreach ($countryFacets as $facet) {
-                if (is_array($facet) && isset($facet[0]) && isset($facet[1])) {
-                    $countryRaw = $facet[0];
-                    $count = $facet[1];
-
-                    // Extrair nome no idioma solicitado do formato: "en^Brazil|pt-br^Brasil|es^Brasil|fr^Brézil"
-                    $countryName = $this->extractCountryName($countryRaw, $langPrefix);
-
-                    if ($countryName && $count > 0) {
-                        $countries[] = [
-                            'name' => $countryName,
-                            'raw' => $countryRaw,
-                            'count' => $count
-                        ];
-                    }
-                }
-            }
-        }
-
-        // Ordenar por nome
-        usort($countries, function ($a, $b) {
-            return strcmp(strtolower($a['name']), strtolower($b['name']));
-        });
-
-        return $countries;
-    }
 
 
     /**
