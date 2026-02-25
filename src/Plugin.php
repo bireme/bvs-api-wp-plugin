@@ -3,6 +3,7 @@ namespace BV;
 
 use BV\Admin\AdminMenu;
 use BV\Admin\SettingsPage;
+use BV\API\FacetMoreController;
 use BV\Shortcodes\BvsResourcesShortcode;
 
 final class Plugin
@@ -18,6 +19,9 @@ final class Plugin
             (new AdminMenu())->register();
             (new SettingsPage())->register();
         }
+
+        // REST: endpoint para "show more" de facets (parâmetro fb da API)
+        FacetMoreController::register();
 
         // Shortcode Genérico de Recursos (substitui todos os shortcodes antigos)
         (new BvsResourcesShortcode())->register();

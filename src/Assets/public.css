@@ -688,6 +688,30 @@
     box-sizing: border-box;
 }
 
+.bvs-filter-show-more-wrap {
+    margin-top: 8px;
+}
+
+.bvs-btn-show-more-facet {
+    background: none;
+    border: none;
+    color: #0073aa;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.bvs-btn-show-more-facet:hover {
+    color: #005a87;
+}
+
+.bvs-btn-show-more-facet:disabled {
+    color: #6c757d;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
 .bvs-checkbox-container {
     max-height: 200px;
     overflow-y: auto;

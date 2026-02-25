@@ -31,8 +31,11 @@ final class BvsaludGenericClient
 
     /**
      * Busca recursos da API com filtros opcionais
-     * 
-     * @param array $filters Filtros de busca (q, count, start, format, fq, etc.)
+     *
+     * Para obter mais opções em um facet (show more), use o parâmetro fb no formato
+     * "cluster:quantidade", ex: fb=language:40 (a API retorna 20 por facet por padrão).
+     *
+     * @param array $filters Filtros de busca (q, count, start, format, fq, fb, facet, facet_field, etc.)
      * @return array Resposta da API em formato JSON
      */
     public function getResources(array $filters = []): array
@@ -50,10 +53,17 @@ final class BvsaludGenericClient
             'fq' => '',
         ];
 
-        // Mesclar filtros com padrões, removendo valores vazios
+        // Mesclar filtros com padrões; remover apenas string vazia e null (preservar 0 para start)
         $queryParams = array_filter(array_merge($defaults, $filters), function ($value) {
             return $value !== '' && $value !== null;
         });
+        // Garantir que count e start sempre existam quando foram passados em $filters
+        if (array_key_exists('count', $filters)) {
+            $queryParams['count'] = $filters['count'];
+        }
+        if (array_key_exists('start', $filters)) {
+            $queryParams['start'] = $filters['start'];
+        }
 
 
         // Construir URL completa

@@ -17,7 +17,11 @@ if (!defined('ABSPATH'))
 <div class="bvs-filters-box">
     <h3 class="bvs-filters-title">Filtros de Busca</h3>
 
-    <form method="get" class="bvs-filters-form" id="bvsFiltersForm">
+    <form method="get" class="bvs-filters-form" id="bvsFiltersForm"
+        data-bv-rest-url="<?php echo esc_url(rest_url('bv/v1/facet-more')); ?>"
+        data-bv-resource-type="<?php echo esc_attr($type ?? ''); ?>"
+        data-bv-current-q="<?php echo esc_attr($currentQ ?? '*:*'); ?>"
+        data-bv-current-fq="<?php echo esc_attr($currentFq ?? ''); ?>">
         <!-- Preservar page_id e outros parâmetros necessários -->
         <?php if (isset($_GET['page_id'])): ?>
             <input type="hidden" name="page_id" value="<?php echo esc_attr($_GET['page_id']); ?>">
@@ -49,6 +53,10 @@ if (!defined('ABSPATH'))
                 } elseif (isset($_GET[$facetKey])) {
                     $selectedValues = explode(',', sanitize_text_field($_GET[$facetKey]));
                 }
+
+                $resourceType = $type ?? '';
+                $showMore = !empty($filter['showMore']);
+                $nextFbCount = (int) ($filter['nextFbCount'] ?? 40);
 
                 // Incluir o componente genérico de filtro
                 include __DIR__ . '/components/filter-checkbox-group.php';

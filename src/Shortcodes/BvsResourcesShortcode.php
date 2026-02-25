@@ -219,7 +219,7 @@ final class BvsResourcesShortcode
         $showFilters = filter_var($showFiltersValue, FILTER_VALIDATE_BOOLEAN);
 
         if ($showFilters) {
-            return $this->renderWithFilters($content, $atts, $atts['type'], $apiResponse);
+            return $this->renderWithFilters($content, $atts, $atts['type'], $apiResponse, $appliedFilters);
         }
 
         return $content;
@@ -230,12 +230,19 @@ final class BvsResourcesShortcode
     /**
      * Renderiza layout com sidebar de filtros
      */
-    private function renderWithFilters(string $content, array $atts, $type, $apiResponse): string
+    private function renderWithFilters(string $content, array $atts, $type, $apiResponse, array $appliedFilters = []): string
     {
-        $filtersSidebar = $this->renderFiltersSidebar($atts, $type, $apiResponse);
+        $filtersSidebar = $this->renderFiltersSidebar($atts, $type, $apiResponse, $appliedFilters);
 
-        // Garantir que o CSS dos filtros seja carregado
+        // Garantir que o CSS dos filtros seja carregado e o JS de "Ver mais"
         wp_enqueue_style('bv-public');
+        wp_enqueue_script(
+            'bv-filters',
+            BV_PLUGIN_URL . 'src/Assets/filters.js',
+            [],
+            BV_VERSION,
+            true
+        );
 
         $html = '<div class="bvs-container-with-filters">';
         $html .= '<div class="bvs-filters-sidebar">' . $filtersSidebar . '</div>';
@@ -250,12 +257,25 @@ final class BvsResourcesShortcode
     /**
      * Renderiza a sidebar de filtros
      */
-    private function renderFiltersSidebar(array $atts, $type, $apiResponse): string
+    private function renderFiltersSidebar(array $atts, $type, $apiResponse, array $appliedFilters = []): string
     {
         // Pegar título atual (fixo)
         $currentTitle = $_GET['bvsTitle'] ?? $_GET['bvsSearchTitle'] ?? $atts['searchTitle'] ?? '';
         // Obter todos os recursos configurados
         $resourcesConfig = \BV\Admin\SettingsPage::getResourcesConfig();
+
+        $paramsForBuild = new ResourcesParams(
+            search: $atts['searchTitle'] ?? '',
+            searchTitle: $atts['searchTitle'] ?? '',
+            type: $type,
+            limit: (int) ($atts['limit'] ?? 12),
+            max: (int) ($atts['max'] ?? 50),
+            show_pagination: !empty($atts['show_pagination']),
+            page: (int) ($atts['page'] ?? 1),
+            showfilters: true
+        );
+        $currentFq = $this->buildFilters($paramsForBuild, $type, $appliedFilters);
+        $currentQ = !empty($atts['searchTitle']) ? $atts['searchTitle'] : '*:*';
 
         // Buscar a configuração do recurso específico
         $resourceConfig = null;
@@ -320,13 +340,13 @@ final class BvsResourcesShortcode
     }
 
     /**
-     * Extrai o valor de uma string multilíngue
-     * 
+     * Extrai o valor de uma string multilíngue (usado também pelo endpoint REST de facet "show more")
+     *
      * @param string $value String que pode conter formato multilíngue (ex: "en^Chile|pt-br^Chile|es^Chile|fr^Chili")
      * @param string $lang Idioma preferido (padrão: 'pt-br')
      * @return string Valor extraído no idioma solicitado ou valor original se não for multilíngue
      */
-    private function extractMultilangValue(string $value, string $lang = 'pt-br'): string
+    public static function extractMultilangValue(string $value, string $lang = 'pt-br'): string
     {
         if (strpos($value, '^') === false || strpos($value, '|') === false) {
             return $value;
@@ -398,7 +418,7 @@ final class BvsResourcesShortcode
         foreach ($facetData as $item) {
             if (is_array($item) && count($item) >= 2) {
                 $rawValue = $item[0];
-                $translatedLabel = $this->extractMultilangValue($rawValue, 'pt-br');
+                $translatedLabel = self::extractMultilangValue($rawValue, 'pt-br');
 
                 $filterOptions[] = [
                     'key' => $rawValue,
@@ -412,13 +432,53 @@ final class BvsResourcesShortcode
             return null;
         }
 
+        $optionsCount = count($filterOptions);
+        $initialFacetLimit = 20;
+
         return [
             'name' => $facetLabel ?: $facetKey,
             'facetKey' => $facetKey,
-            'filterOptions' => $filterOptions
+            'filterOptions' => $filterOptions,
+            'showMore' => $optionsCount >= $initialFacetLimit,
+            'nextFbCount' => $initialFacetLimit + 20,
         ];
     }
 
+    /**
+     * Constrói array de opções de filtro a partir da resposta da API (para uso no endpoint REST "show more").
+     *
+     * @param array $apiResponse Resposta normalizada da API (com chave 'facets')
+     * @param string $facetKey Chave do facet (ex: 'language', 'descriptor_filter')
+     * @return array{options: array, hasMore: bool} Opções no formato filterOptions e se há mais itens
+     */
+    public static function buildFilterOptionsFromApiResponse(array $apiResponse, string $facetKey): array
+    {
+        $facetData = null;
+        if (isset($apiResponse['facets']['facet_fields'][$facetKey])) {
+            $facetData = $apiResponse['facets']['facet_fields'][$facetKey];
+        }
+
+        if (!$facetData || !is_array($facetData)) {
+            return ['options' => [], 'hasMore' => false];
+        }
+
+        $options = [];
+        foreach ($facetData as $item) {
+            if (is_array($item) && count($item) >= 2) {
+                $rawValue = $item[0];
+                $options[] = [
+                    'key' => $rawValue,
+                    'label' => self::extractMultilangValue($rawValue, 'pt-br'),
+                    'count' => $item[1],
+                ];
+            }
+        }
+
+        return [
+            'options' => $options,
+            'hasMore' => count($options) >= 20,
+        ];
+    }
 
     /**
      * Renderiza um grid genérico com ResourceCardDto[]
@@ -555,12 +615,15 @@ final class BvsResourcesShortcode
 
         $fqString = $this->buildFilters($params, $resourceType, $appliedFilters);
 
+        // Sempre incluir q, count e start para que limit e paginação funcionem com ou sem filtros
         $filters = $params ? [
             'q' => $params->search ?: '*:*',
             'count' => $params->limit,
-            'start' => ($params->page - 1) * $params->limit,
-            'fq' => $fqString
+            'start' => (int) (($params->page - 1) * $params->limit),
         ] : [];
+        if ($params && $fqString !== '') {
+            $filters['fq'] = $fqString;
+        }
 
         // Adicionar parâmetros de facet se show_filters estiver habilitado
         if ($params && $params->showfilters && !empty($resourceConfig['filter_types'])) {
