@@ -315,6 +315,16 @@ final class LegislationDto
 
         return implode(', ', $formattedAreas);
     }
+    public function getFormattedLegislationType(){
+        if (empty($this->act_type)) {
+            return '';
+        }else{
+            $type = ($this->act_type);
+            $formattedType = $this->normalizeMultilangField($type, $this->defaultLanguage);
+        }
+
+        return $type;
+    }
 
     /**
      * Retorna o tipo de ato formatado
