@@ -8,11 +8,13 @@ use BV\API\MultimediaDto;
 use BV\API\LegislationDto;
 use BV\API\BibliographicDatabaseDto;
 use BV\API\JournalDto;
+use BV\API\CenterDto;
 use BV\Shortcodes\Helpers\JournalToResource;
 use BV\Shortcodes\Helpers\WebResourceToResource;
 use BV\Shortcodes\Helpers\EventToResource;
 use BV\Shortcodes\Helpers\LegislationToResource;
 use BV\Shortcodes\Helpers\MultimediaToResource;
+use BV\Shortcodes\Helpers\CenterToResource;
 use BV\Support\ResourceCardDto;
 use BV\Shortcodes\Classes\ResourcesParams;
 
@@ -201,6 +203,22 @@ final class BvsResourcesShortcode
                 $multimediaConverter = new MultimediaToResource();
                 $resources = array_map(function ($multimedia) use ($multimediaConverter) {
                     return $multimediaConverter->convert($multimedia);
+                }, $apiResponse['docs']);
+                break;
+            case 'centers':
+                $apiResponse['docs'] = array_map(function ($doc) {
+                    if (!is_array($doc)) {
+                        return null;
+                    }
+                    return new CenterDto($doc);
+                }, $apiResponse['docs']);
+                // Filtrar valores nulos
+                $apiResponse['docs'] = array_filter($apiResponse['docs'], function ($doc) {
+                    return $doc !== null;
+                });
+                $centerConverter = new CenterToResource();
+                $resources = array_map(function ($center) use ($centerConverter) {
+                    return $centerConverter->convert($center);
                 }, $apiResponse['docs']);
                 break;
             default:

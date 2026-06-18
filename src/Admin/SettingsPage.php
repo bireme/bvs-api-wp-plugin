@@ -393,9 +393,11 @@ final class SettingsPage
         // Mapear recursos antigos para o novo formato
         $oldResources = [
             'lis' => get_option('bv_lis_url', ''),
-            'events' => get_option('bv_events_url', ''),
-            'multimedia' => get_option('bv_multimedia_url', ''),
-            'legislations' => get_option('bv_legislations_url', ''),
+            'events' => get_option('bv_events_url', 'https://api.bvsalud.org/event/v1/'),
+            'centers' => get_option('bv_events_url', 'https://api.bvsalud.org/institution/v1/'),
+            'multimedia' => get_option('bv_multimedia_url', 'https://api.bvsalud.org/multimedia/v1/'),
+            'legislations' => get_option('bv_legislations_url', 'https://api.bvsalud.org/leisref/v1/'),
+            'journals' => get_option('bv_legislations_url', 'https://api.bvsalud.org/title/v1/'),
             'bibliographic_databases' => get_option('bv_bibliographic_databases_url', ''),
         ];
 

@@ -253,7 +253,7 @@
 }
 
 .bvs-item-title {
-    margin: 0 0 1rem 0;
+    margin: 0 0 0rem 0;
     font-size: 1rem;
     line-height: 1.4;
     font-weight: 600;
@@ -292,7 +292,7 @@
     flex-direction: column;
     gap: 0.5rem;
     flex: 1 1 auto;
-    min-height: 200px;
+    min-height: 240px;
     width: 100%;
     box-sizing: border-box;
     overflow: hidden;
