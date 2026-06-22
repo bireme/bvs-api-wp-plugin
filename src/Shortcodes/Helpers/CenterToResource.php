@@ -20,13 +20,23 @@ class CenterToResource {
      * Aplica todas as regras de negócio e formatação específicas de Institutionos
      */
     public function convert(CenterDto $center): ResourceCardDto {
+
+        if ($center->unit) {
+            $titleText = strlen($center->unit) > 60 ? substr($center->unit, 0, 57) . '...' : $center->unit;
+            if ($center->url) {
+                $title = 'un<a href="' . esc_url($center->url) . '" target="_blank" rel="noopener">' . esc_html($titleText) . '</a>';
+            } else {
+                $title = 'un'. esc_html($titleText);
+            }
+        }
+
         // Nametitle = $center->title;
         if ($center->title) {
             $titleText = strlen($center->title) > 60 ? substr($center->title, 0, 57) . '...' : $center->title;
             if ($center->url) {
-                $title = '<a href="' . esc_url($center->url) . '" target="_blank" rel="noopener">' . esc_html($titleText) . '</a>';
+                $title .= '<BR><a href="' . esc_url($center->url) . '" target="_blank" rel="noopener">' . esc_html($titleText) . '</a>';
             } else {
-                $title = esc_html($titleText);
+                $title .= '<BR>' . esc_html($titleText);
             }
         }
         
