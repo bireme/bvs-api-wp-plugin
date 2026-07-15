@@ -121,7 +121,7 @@ class CenterToResource {
 
         // 4. LINK
         //$link = $center->url ?? '';
-        $link = 'https://www.google.com.br';
+        $link = 'https://www.google.com/maps/search/' . $fullAddress;
         // Cria o ResourceCardDto
         return new ResourceCardDto([
             'title' => $title,
