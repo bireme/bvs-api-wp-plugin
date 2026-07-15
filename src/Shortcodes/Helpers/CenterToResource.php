@@ -21,12 +21,12 @@ class CenterToResource {
      */
     public function convert(CenterDto $center): ResourceCardDto {
 
-        if ($center->unit) {
-            $titleText = strlen($center->unit) > 60 ? substr($center->unit, 0, 57) . '...' : $center->unit;
+        if ($center->unit and $center->unit != '' and $center->unit != '...') {
+            $titleText = strlen($center->unit) > 60 ? substr($center->unit, 0, 57) : $center->unit;
             if ($center->url) {
-                $title = 'un<a href="' . esc_url($center->url) . '" target="_blank" rel="noopener">' . esc_html($titleText) . '</a>';
+                $title = '<a href="' . esc_url($center->url) . '" target="_blank" rel="noopener">' . esc_html($titleText) . '</a><BR>';
             } else {
-                $title = 'un'. esc_html($titleText);
+                $title = ''. esc_html($titleText) . '<BR>';
             }
         }
 
@@ -34,9 +34,9 @@ class CenterToResource {
         if ($center->title) {
             $titleText = strlen($center->title) > 60 ? substr($center->title, 0, 57) . '...' : $center->title;
             if ($center->url) {
-                $title .= '<BR><a href="' . esc_url($center->url) . '" target="_blank" rel="noopener">' . esc_html($titleText) . '</a>';
+                $title .= '<a href="' . esc_url($center->url) . '" target="_blank" rel="noopener">' . esc_html($titleText) . '</a>';
             } else {
-                $title .= '<BR>' . esc_html($titleText);
+                $title .= '' . esc_html($titleText);
             }
         }
         
